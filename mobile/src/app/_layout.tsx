@@ -14,6 +14,15 @@ function SplashScreen() {
   );
 }
 
+// Routes inside (auth) that authenticated users are still allowed to visit.
+// Used for profile setup, editing, and the volunteer upgrade flow.
+const AUTHENTICATED_AUTH_ROUTES = new Set([
+  'profile-setup',
+  'edit-profile',
+  'become-volunteer',
+  'change-password',
+]);
+
 export default function RootLayout() {
   const { user, profile, isLoading, initialize } = useAuthStore();
   const router = useRouter();
@@ -26,14 +35,27 @@ export default function RootLayout() {
   useEffect(() => {
     if (isLoading) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
-    const inMainGroup = segments[0] === '(main)';
+    const segs = segments as unknown as string[];
+    const inAuthGroup = segs[0] === '(auth)';
+    const inMainGroup = segs[0] === '(main)';
+    // The second segment is the screen name within the group, e.g. 'login'.
+    const screen = segs[1];
 
     if (!user) {
       if (!inAuthGroup) router.replace('/(auth)/welcome');
-    } else {
-      if (!inMainGroup) router.replace('/(main)/');
+      return;
     }
+
+    // Allow logged-in users to access profile-setup, edit-profile and
+    // become-volunteer even though those live under the (auth) group.
+    if (inAuthGroup && screen && AUTHENTICATED_AUTH_ROUTES.has(screen)) {
+      return;
+    }
+
+    // Soft prompt model: if their profile isn't complete yet we still send
+    // them to the main app (the dashboard / profile tab show a "Complete
+    // your profile" banner that links into the right setup form).
+    if (!inMainGroup) router.replace('/(main)/');
   }, [user, profile, isLoading, segments]);
 
   if (isLoading)

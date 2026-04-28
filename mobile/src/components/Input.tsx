@@ -28,12 +28,17 @@ export function Input({
   value,
   onFocus,
   onBlur,
+  multiline,
+  numberOfLines,
+  style,
   ...rest
 }: InputProps) {
   const [showPw, setShowPw] = useState(false);
 
   const borderColor = error ? Colors.danger : '#E2E8F0';
   const bgColor = error ? '#FEF2F2' : '#F8FAFC';
+
+  const minHeight = multiline ? Math.max(80, (numberOfLines ?? 3) * 22) : 50;
 
   return (
     <View style={styles.container}>
@@ -44,13 +49,27 @@ export function Input({
         </Text>
       )}
 
-      <View style={[styles.inputBox, { borderColor, backgroundColor: bgColor }]}>
+      <View
+        style={[
+          styles.inputBox,
+          {
+            borderColor,
+            backgroundColor: bgColor,
+            minHeight,
+            height: multiline ? undefined : minHeight,
+            paddingVertical: multiline ? 10 : 0,
+            alignItems: multiline ? 'flex-start' : 'center',
+          },
+        ]}
+      >
         <TextInput
           {...rest}
+          multiline={multiline}
+          numberOfLines={numberOfLines}
           value={value}
           placeholder={placeholder ?? label}
           placeholderTextColor="#94A3B8"
-          style={styles.input}
+          style={[styles.input, multiline && { textAlignVertical: 'top' }, style]}
           secureTextEntry={isPassword && !showPw}
           onFocus={(e) => {
             onFocus?.(e);
@@ -95,7 +114,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 14,
-    height: 50,
   },
   input: {
     flex: 1,

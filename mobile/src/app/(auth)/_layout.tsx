@@ -7,6 +7,10 @@ export default function AuthLayout() {
       <Stack.Screen name="login" />
       <Stack.Screen name="signup" />
       <Stack.Screen name="forgot-password" />
+      <Stack.Screen name="profile-setup" />
+      <Stack.Screen name="edit-profile" />
+      <Stack.Screen name="become-volunteer" />
+      <Stack.Screen name="change-password" />
     </Stack>
   );
 }

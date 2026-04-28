@@ -54,6 +54,9 @@ export default function MainLayout() {
           ),
         }}
       />
+      {/* Routable from the notification bell on the dashboard, but
+          hidden from the tab bar itself. */}
+      <Tabs.Screen name="notifications" options={{ href: null }} />
     </Tabs>
   );
 }
