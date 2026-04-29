@@ -4,6 +4,7 @@ import { Slot, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { Colors } from '../constants/colors';
+import { ToastHost } from '../components/ToastHost';
 
 function SplashScreen() {
   return (
@@ -68,6 +69,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <Slot />
+      <ToastHost />
     </SafeAreaProvider>
   );
 }

@@ -29,7 +29,22 @@
     },
     "plugins": [
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "CrisisLink uses your location to pin disaster reports and show incidents near you.",
+          "locationWhenInUsePermission": "CrisisLink uses your location to pin disaster reports and show incidents near you."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow CrisisLink to attach photos or videos to disaster reports.",
+          "cameraPermission": "Allow CrisisLink to capture photos or videos for disaster reports.",
+          "microphonePermission": "Allow CrisisLink to record audio with disaster videos."
+        }
+      ]
     ]
   }
 }
