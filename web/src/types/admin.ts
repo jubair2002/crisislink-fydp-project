@@ -91,3 +91,107 @@ export interface VolunteerDetailPayload {
   assignments: TaskAssignmentRow[];
   auditLog: AdminLogRow[];
 }
+
+export interface DisasterFilters {
+  type?: string;
+  severity?: string;
+  status?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  sortBy?: 'created_at' | 'severity' | 'status';
+  sortDir?: 'asc' | 'desc';
+}
+
+export interface DisasterRow {
+  id: string;
+  disaster_type: string | null;
+  location_label: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  severity: string | null;
+  status: string | null;
+  reporter_user_id: string | null;
+  description: string | null;
+  verified_by_user_id: string | null;
+  verification_notes: string | null;
+  verified_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface DisasterUpdateRow {
+  id: string;
+  disaster_id: string;
+  user_id: string;
+  body_text: string;
+  created_at: string;
+}
+
+export interface DisasterMediaRow {
+  id: string;
+  disaster_id: string;
+  public_url: string | null;
+  media_type: 'photo' | 'video' | string;
+  purpose: 'report' | 'verification' | string | null;
+  created_at: string | null;
+}
+
+export interface DisasterVerificationRow {
+  id: string;
+  disaster_id: string;
+  volunteer_id: string;
+  status: string | null;
+  notes: string | null;
+  created_at: string | null;
+}
+
+export interface ResourceRequestRow {
+  id: string;
+  disaster_id: string;
+  requested_item: string | null;
+  quantity: number | null;
+  status: string | null;
+  requested_by: string | null;
+  created_at: string | null;
+}
+
+export interface TaskRow {
+  id: string;
+  disaster_id: string | null;
+  help_type: string | null;
+  priority: string | null;
+  status: string | null;
+  assignment_mode: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface TaskFilters {
+  status?: string;
+  assignmentMode?: string;
+  priority?: string;
+}
+
+export interface VolunteerCandidate {
+  volunteerId: string;
+  userId: string;
+  name: string;
+  rating: number;
+  skills: string[];
+  latitude: number | null;
+  longitude: number | null;
+  distanceKm: number | null;
+  skillMatch: number;
+}
+
+export interface DisasterDetailPayload {
+  disaster: DisasterRow;
+  reporter: { name: string | null; email: string | null; phone: string | null; city: string | null } | null;
+  verifier: { name: string | null; email: string | null } | null;
+  media: DisasterMediaRow[];
+  updates: DisasterUpdateRow[];
+  verificationRecords: DisasterVerificationRow[];
+  tasks: TaskRow[];
+  assignments: TaskAssignmentRow[];
+  resourceRequests: ResourceRequestRow[];
+}

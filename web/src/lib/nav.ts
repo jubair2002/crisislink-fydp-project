@@ -9,6 +9,7 @@ import {
   FileText,
   MessageSquare,
   ScrollText,
+  ClipboardList,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -24,6 +25,7 @@ export const ADMIN_NAV: NavItem[] = [
   { path: '/users', label: 'User Management', icon: Users },
   { path: '/volunteers', label: 'Volunteer Management', icon: HeartHandshake },
   { path: '/disasters', label: 'Disaster Monitoring', icon: Siren },
+  { path: '/tasks', label: 'Task Management', icon: ClipboardList },
   { path: '/campaigns', label: 'Campaign Management', icon: Megaphone },
   { path: '/donations', label: 'Donation Tracking', icon: HandCoins },
   { path: '/resources', label: 'Resource Management', icon: PackageSearch },

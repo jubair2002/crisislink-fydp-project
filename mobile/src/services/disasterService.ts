@@ -399,8 +399,12 @@ export type DisasterRealtimePayload = {
 };
 
 export function subscribeDisastersRealtime(onPayload: (p: DisasterRealtimePayload) => void): () => void {
+  // Use a unique channel name per subscription to avoid
+  // "cannot add postgres_changes callbacks ... after subscribe()"
+  // when this screen mounts/unmounts multiple times.
+  const channelName = `disasters-realtime-${Crypto.randomUUID()}`;
   const channel = supabase
-    .channel('disasters-realtime')
+    .channel(channelName)
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'disasters' },
