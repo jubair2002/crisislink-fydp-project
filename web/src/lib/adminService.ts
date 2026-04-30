@@ -790,7 +790,9 @@ export async function assignVolunteersToTask(
     accepted_at: null,
     completed_at: null,
   }));
-  const { error } = await supabase.from('task_assignments').insert(rows);
+  const { error } = await supabase
+    .from('task_assignments')
+    .upsert(rows, { onConflict: 'task_id,volunteer_id' });
   if (error) throw unwrapAdminError(new Error(error.message));
 
   const mode = options?.overrideAuto ? 'admin' : undefined;

@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   StatusBar,
   Linking,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,6 +29,14 @@ import { useAuthStore } from '../../store/authStore';
 import { getVolunteerProfile } from '../../services/profileService';
 import { useToastStore } from '../../store/toastStore';
 import type { DisasterMediaRow, DisasterRow, DisasterUpdateRow } from '../../types/disaster';
+import { createTask } from '../../services/taskService';
+
+const TASK_TYPES = [
+  { key: 'search_rescue', label: 'Search & Rescue' },
+  { key: 'medical_assistance', label: 'Medical Assistance' },
+  { key: 'food_distribution', label: 'Food Distribution' },
+  { key: 'logistics_support', label: 'Logistics Support' },
+];
 
 export default function DisasterDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,6 +49,7 @@ export default function DisasterDetailScreen() {
   const [updates, setUpdates] = useState<DisasterUpdateRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [volunteerApproved, setVolunteerApproved] = useState(false);
+  const [creatingTask, setCreatingTask] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -76,6 +86,41 @@ export default function DisasterDetailScreen() {
     showToast('Nearby responders have been alerted — stay safe.');
     void Linking.openURL(
       `https://www.google.com/maps/search/?api=1&query=${disaster?.latitude},${disaster?.longitude}`,
+    );
+  };
+
+  const openCreateTaskPicker = () => {
+    if (!disaster) return;
+    if (creatingTask) return;
+
+    Alert.alert(
+      'Create Response Task',
+      'Select task type for auto-assignment:',
+      [
+        ...TASK_TYPES.map((taskType) => ({
+          text: taskType.label,
+          onPress: () => {
+            void (async () => {
+              setCreatingTask(true);
+              try {
+                await createTask({
+                  disaster_id: disaster.id,
+                  task_type: taskType.key,
+                  priority: disaster.severity,
+                  required_volunteers: 1,
+                });
+                showToast('Task created and auto-assignment started.');
+              } catch (err) {
+                showToast(err instanceof Error ? err.message : 'Could not create task.');
+              } finally {
+                setCreatingTask(false);
+              }
+            })();
+          },
+        })),
+        { text: 'Cancel', style: 'cancel' as const },
+      ],
+      { cancelable: true },
     );
   };
 
@@ -172,6 +217,18 @@ export default function DisasterDetailScreen() {
             >
               <Ionicons name="shield-checkmark-outline" size={18} color={Colors.primary} />
               <Text style={disasterStyles.outlineBtnText}>Verify disaster</Text>
+            </TouchableOpacity>
+          ) : null}
+          {(profile?.role === 'admin' || profile?.role === 'authority') && disaster.status === 'verified' ? (
+            <TouchableOpacity
+              style={[disasterStyles.outlineBtn, { flex: 1, opacity: creatingTask ? 0.7 : 1 }]}
+              onPress={openCreateTaskPicker}
+              disabled={creatingTask}
+            >
+              <Ionicons name="add-circle-outline" size={18} color={Colors.primary} />
+              <Text style={disasterStyles.outlineBtnText}>
+                {creatingTask ? 'Creating...' : 'Create task'}
+              </Text>
             </TouchableOpacity>
           ) : null}
         </View>

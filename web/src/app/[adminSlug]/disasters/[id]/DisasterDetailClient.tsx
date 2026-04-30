@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import toast from 'react-hot-toast';
 import {
@@ -19,6 +20,7 @@ export default function DisasterDetailClient({
   slug: string;
   payload: DisasterDetailPayload;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const d = payload.disaster;
@@ -27,7 +29,7 @@ export default function DisasterDetailClient({
       try {
         await fn();
         toast.success('Updated');
-        location.reload();
+        router.refresh();
       } catch (e) {
         toast.error(e instanceof Error ? e.message : 'Request failed');
       }
@@ -132,7 +134,7 @@ export default function DisasterDetailClient({
               onClick={() =>
                 run(async () => {
                   await deleteDisasterAction(d.id);
-                  location.assign(`/${slug}/disasters`);
+                  router.push(`/${slug}/disasters`);
                 })
               }
             >

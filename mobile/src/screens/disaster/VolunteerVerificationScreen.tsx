@@ -30,8 +30,15 @@ import {
 import { useAuthStore } from '../../store/authStore';
 import { getVolunteerProfile } from '../../services/profileService';
 import type { DisasterRow, DisasterSeverity } from '../../types/disaster';
+import { createTask } from '../../services/taskService';
 
 const SEVERITIES: DisasterSeverity[] = ['low', 'medium', 'high', 'critical'];
+const TASK_TYPES = [
+  { key: 'search_rescue', label: 'Search & Rescue' },
+  { key: 'medical_assistance', label: 'Medical Assistance' },
+  { key: 'food_distribution', label: 'Food Distribution' },
+  { key: 'logistics_support', label: 'Logistics Support' },
+];
 
 export default function VolunteerVerificationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -44,6 +51,7 @@ export default function VolunteerVerificationScreen() {
   const [notes, setNotes] = useState('');
   const [severityDraft, setSeverityDraft] = useState<DisasterSeverity>('medium');
   const [uploadPct, setUploadPct] = useState(0);
+  const [taskType, setTaskType] = useState('search_rescue');
 
   useEffect(() => {
     let cancelled = false;
@@ -52,12 +60,12 @@ export default function VolunteerVerificationScreen() {
       try {
         const [d, v] = await Promise.all([getDisasterById(id), getVolunteerProfile(user.id)]);
         if (cancelled) return;
-        const ok =
-          profile?.role === 'volunteer' &&
-          v?.verification_status === 'approved' &&
-          d !== null;
+        const isAdmin = profile?.role === 'admin' || profile?.role === 'authority';
+        const isApprovedVolunteer =
+          profile?.role === 'volunteer' && v?.verification_status === 'approved';
+        const ok = (isAdmin || isApprovedVolunteer) && d !== null;
         if (!ok) {
-          Alert.alert('Volunteers only', 'Approved volunteers can verify disasters.');
+          Alert.alert('Access denied', 'Only admin/authority or approved volunteers can verify.');
           router.back();
           return;
         }
@@ -119,7 +127,36 @@ export default function VolunteerVerificationScreen() {
         notes: notes.trim() || null,
         severity: outcome === 'verified' ? severityDraft : undefined,
       });
-      Alert.alert(outcome === 'verified' ? 'Verified' : 'Rejected', 'Disaster record updated.');
+      let taskCreationError: string | null = null;
+      if (outcome === 'verified') {
+        try {
+          await createTask({
+            disaster_id: disaster.id,
+            task_type: taskType,
+            priority: severityDraft,
+            required_volunteers: 1,
+            autoAssignRadiusKm: 5,
+          });
+        } catch (taskErr) {
+          taskCreationError =
+            taskErr instanceof Error ? taskErr.message : 'Unknown task creation error';
+          console.warn('[verify] task creation failed:', taskCreationError);
+        }
+      }
+
+      if (outcome === 'verified' && taskCreationError) {
+        Alert.alert(
+          'Verified, but task creation failed',
+          `Disaster was verified successfully, but no assignment task was created.\n\nReason: ${taskCreationError}`,
+        );
+      } else {
+        Alert.alert(
+          outcome === 'verified' ? 'Verified' : 'Rejected',
+          outcome === 'verified'
+            ? 'Disaster verified and task auto-created for volunteer assignment.'
+            : 'Disaster record updated.',
+        );
+      }
       router.replace(`/(main)/disasters/detail/${disaster.id}`);
     } catch (e: unknown) {
       Alert.alert('Error', e instanceof Error ? e.message : 'Could not update.');
@@ -181,6 +218,22 @@ export default function VolunteerVerificationScreen() {
                   onPress={() => setSeverityDraft(s)}
                 >
                   <Text style={[styles.segLabel, active && styles.segLabelOn]}>{SEVERITY_LABELS[s]}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <Text style={disasterStyles.sectionLabel}>Task type after verification</Text>
+          <View style={styles.segment}>
+            {TASK_TYPES.map((t) => {
+              const active = taskType === t.key;
+              return (
+                <TouchableOpacity
+                  key={t.key}
+                  style={[styles.segChip, active && styles.segChipOn]}
+                  onPress={() => setTaskType(t.key)}
+                >
+                  <Text style={[styles.segLabel, active && styles.segLabelOn]}>{t.label}</Text>
                 </TouchableOpacity>
               );
             })}

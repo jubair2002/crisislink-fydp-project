@@ -176,7 +176,7 @@ export default function DisasterMapScreen() {
           </TouchableOpacity>
         </View>
         <TouchableOpacity onPress={() => void load()} style={styles.iconBtn}>
-          <Ionicons name="refresh" size={22} color={Colors.textPrimary} />
+          <Ionicons name="refresh" size={18} color={Colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -293,9 +293,6 @@ export default function DisasterMapScreen() {
         </View>
       )}
 
-      <Text style={styles.legendNote}>
-        Showing reported + verified reports for authenticated users
-      </Text>
     </SafeAreaView>
   );
 }
@@ -312,10 +309,8 @@ const styles = StyleSheet.create({
   iconBtn: {
     width: 42,
     height: 42,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderRadius: 21,
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -404,11 +399,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  legendNote: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    paddingHorizontal: 24,
-    paddingBottom: 10,
-  },
 });

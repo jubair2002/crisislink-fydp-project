@@ -28,7 +28,7 @@ export default function NotificationsScreen() {
       >
         <View style={styles.empty}>
           <View style={styles.emptyIcon}>
-            <Ionicons name="notifications-outline" size={32} color={Colors.primary} />
+            <Ionicons name="notifications-outline" size={24} color={Colors.primary} />
           </View>
           <Text style={styles.emptyTitle}>No notifications yet</Text>
           <Text style={styles.emptySub}>
@@ -53,10 +53,8 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 42,
     height: 42,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderRadius: 21,
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -71,14 +69,12 @@ const styles = StyleSheet.create({
     paddingTop: 80,
   },
   emptyIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 24,
-    backgroundColor: '#EFF6FF',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#BFDBFE',
     marginBottom: 6,
   },
   emptyTitle: { fontSize: 18, fontWeight: '800', color: Colors.textPrimary },

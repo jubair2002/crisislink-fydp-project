@@ -146,18 +146,6 @@ export default function DashboardScreen() {
           </View>
         )}
 
-        {role === 'volunteer' && volunteer?.verification_status === 'approved' && (
-          <View style={[styles.statusCard, { borderColor: '#A7F3D0', backgroundColor: '#ECFDF5' }]}>
-            <Ionicons name="shield-checkmark" size={18} color={Colors.success} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.statusTitle, { color: '#065F46' }]}>Verified volunteer</Text>
-              <Text style={styles.statusText}>
-                You&rsquo;re cleared to receive task assignments and disaster response calls.
-              </Text>
-            </View>
-          </View>
-        )}
-
         <View style={styles.placeholder}>
           {loadingVolunteer ? (
             <ActivityIndicator color={Colors.primary} />

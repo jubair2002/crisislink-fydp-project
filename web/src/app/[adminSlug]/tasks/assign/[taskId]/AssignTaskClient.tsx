@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 import toast from 'react-hot-toast';
 import { assignVolunteersToTaskAction } from '../../../_actions/adminActions';
@@ -17,6 +18,7 @@ export default function AssignTaskClient({
   candidates: VolunteerCandidate[];
   reassign: boolean;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [selected, setSelected] = useState<string[]>([]);
   const chosen = useMemo(() => new Set(selected), [selected]);
@@ -26,7 +28,7 @@ export default function AssignTaskClient({
       try {
         await assignVolunteersToTaskAction(task.id, selected, { reassign, overrideAuto: true });
         toast.success('Volunteers assigned and notified');
-        location.assign(`/${slug}/tasks`);
+        router.push(`/${slug}/tasks`);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : 'Assignment failed');
       }

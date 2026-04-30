@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 import toast from 'react-hot-toast';
 import {
@@ -38,6 +39,7 @@ export default function DisastersClient({
   rows: DisasterRow[];
   filters: DisasterFilters;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [selected, setSelected] = useState<DisasterRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DisasterRow | null>(null);
@@ -57,7 +59,7 @@ export default function DisastersClient({
       try {
         await fn();
         toast.success('Updated');
-        location.reload();
+        router.refresh();
       } catch (e) {
         toast.error(e instanceof Error ? e.message : 'Request failed');
       }
@@ -111,14 +113,24 @@ export default function DisastersClient({
 
       <div className="rounded-xl border border-surface-border bg-surface shadow-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[920px] text-sm">
-            <thead className="bg-surface-muted text-ink-muted text-xs uppercase"><tr><th className="px-3 py-2">Type</th><th className="px-3 py-2">Location</th><th className="px-3 py-2">Severity</th><th className="px-3 py-2">Status</th><th className="px-3 py-2">Reporter</th><th className="px-3 py-2">Date</th><th className="px-3 py-2">Actions</th></tr></thead>
+          <table className="w-full min-w-[920px] text-sm text-left">
+            <thead className="bg-surface-muted text-ink-muted text-xs uppercase tracking-wide">
+              <tr>
+                <th className="px-4 py-3 font-medium">Type</th>
+                <th className="px-4 py-3 font-medium">Location</th>
+                <th className="px-4 py-3 font-medium">Severity</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Reporter</th>
+                <th className="px-4 py-3 font-medium">Date</th>
+                <th className="px-4 py-3 font-medium text-right">Actions</th>
+              </tr>
+            </thead>
             <tbody className="divide-y divide-surface-border">
               {rows.map((row) => (
-                <tr key={row.id} className="hover:bg-surface-muted/60">
-                  <td className="px-3 py-2">{row.disaster_type ?? '—'}</td>
-                  <td className="px-3 py-2">{row.location_label ?? '—'}</td>
-                  <td className="px-3 py-2">
+                <tr key={row.id} className="hover:bg-surface-muted/60 align-top">
+                  <td className="px-4 py-3">{row.disaster_type ?? '—'}</td>
+                  <td className="px-4 py-3">{row.location_label ?? '—'}</td>
+                  <td className="px-4 py-3">
                     <select
                       className="rounded border border-surface-border px-2 py-1 text-xs"
                       value={row.severity ?? 'medium'}
@@ -128,11 +140,11 @@ export default function DisastersClient({
                       <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option>
                     </select>
                   </td>
-                  <td className="px-3 py-2 capitalize">{row.status ?? '—'}</td>
-                  <td className="px-3 py-2 font-mono text-xs">{row.reporter_user_id?.slice(0, 8) ?? '—'}</td>
-                  <td className="px-3 py-2">{row.created_at ? new Date(row.created_at).toLocaleString() : '—'}</td>
-                  <td className="px-3 py-2">
-                    <div className="flex flex-wrap gap-1">
+                  <td className="px-4 py-3 capitalize">{row.status ?? '—'}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{row.reporter_user_id?.slice(0, 8) ?? '—'}</td>
+                  <td className="px-4 py-3">{row.created_at ? new Date(row.created_at).toLocaleString() : '—'}</td>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex flex-wrap justify-end gap-1">
                       <button className="rounded border border-surface-border px-2 py-1 text-xs" onClick={() => setSelected(row)}>View</button>
                       <button className="rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs" onClick={() => run(() => verifyDisasterAction(row.id))} disabled={pending}>Verify</button>
                       <button className="rounded border border-red-200 bg-red-50 px-2 py-1 text-xs" onClick={() => run(() => markDisasterFalseReportAction(row.id))} disabled={pending}>False</button>
