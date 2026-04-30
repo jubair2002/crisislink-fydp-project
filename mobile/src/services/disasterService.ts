@@ -263,6 +263,9 @@ export async function verifyDisaster(input: VerifyDisasterInput): Promise<Disast
         'Could not verify this report. It may be missing or blocked by database permissions.',
       );
     }
+    if (!error) {
+      throw new Error('Unexpected verify response.');
+    }
 
     const msg = error.message ?? '';
     const missing = /'([^']+)'/.exec(msg)?.[1];

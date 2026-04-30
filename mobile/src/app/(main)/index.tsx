@@ -164,9 +164,13 @@ export default function DashboardScreen() {
           ) : (
             <>
               <Ionicons name="construct-outline" size={64} color="#CBD5E1" />
-              <Text style={styles.placeholderTitle}>Dashboard Coming Soon</Text>
+              <Text style={styles.placeholderTitle}>
+                {role === 'volunteer' ? 'Volunteer dashboard' : 'Citizen dashboard'}
+              </Text>
               <Text style={styles.placeholderSub}>
-                Disaster alerts, volunteer tasks, and donation campaigns will appear here.
+                {role === 'volunteer'
+                  ? 'Use Disasters for the live map and Tasks for assignments (features arriving soon).'
+                  : 'Disaster alerts and donation campaigns will appear here soon.'}
               </Text>
             </>
           )}

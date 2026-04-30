@@ -1,8 +1,13 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+
 import { Colors } from '../../constants/colors';
+import { useAuthStore } from '../../store/authStore';
 
 export default function MainLayout() {
+  const role = useAuthStore((s) => s.profile?.role);
+  const isVolunteer = role === 'volunteer';
+
   return (
     <Tabs
       screenOptions={{
@@ -40,8 +45,19 @@ export default function MainLayout() {
         name="campaigns"
         options={{
           title: 'Campaigns',
+          href: isVolunteer ? null : '/campaigns',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="heart-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="tasks"
+        options={{
+          title: 'Tasks',
+          href: isVolunteer ? '/tasks' : null,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="list-outline" size={size} color={color} />
           ),
         }}
       />
