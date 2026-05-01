@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
-import { Slot, useRouter, useSegments } from 'expo-router';
+import { Slot, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { Colors } from '../constants/colors';
@@ -28,6 +28,7 @@ export default function RootLayout() {
   const { user, profile, isLoading, initialize } = useAuthStore();
   const router = useRouter();
   const segments = useSegments();
+  const rootNavState = useRootNavigationState();
 
   useEffect(() => {
     initialize();
@@ -35,6 +36,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (isLoading) return;
+    // Avoid router.replace before the Stack / Tabs navigator exists (first paint).
+    if (!rootNavState?.key) return;
 
     const segs = segments as unknown as string[];
     const inAuthGroup = segs[0] === '(auth)';
@@ -57,24 +60,27 @@ export default function RootLayout() {
     // them to the main app (the dashboard / profile tab show a "Complete
     // your profile" banner that links into the right setup form).
     if (!inMainGroup) router.replace('/(main)/');
-  }, [user, profile, isLoading, segments]);
+  }, [user, profile, isLoading, segments, rootNavState?.key]);
 
-  if (isLoading)
-    return (
-      <SafeAreaProvider>
-        <SplashScreen />
-      </SafeAreaProvider>
-    );
-
+  // Slot must mount on the first render or expo-router throws on early router.replace().
   return (
     <SafeAreaProvider>
       <Slot />
+      {isLoading ? (
+        <View style={[StyleSheet.absoluteFillObject, styles.splashOverlay]} pointerEvents="auto">
+          <SplashScreen />
+        </View>
+      ) : null}
       <ToastHost />
     </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  splashOverlay: {
+    backgroundColor: Colors.background,
+    zIndex: 999,
+  },
   splash: {
     flex: 1,
     backgroundColor: Colors.background,

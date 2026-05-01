@@ -27,9 +27,7 @@ export default function MainLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
-          ),
+          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -73,6 +71,7 @@ export default function MainLayout() {
       {/* Routable from the notification bell on the dashboard, but
           hidden from the tab bar itself. */}
       <Tabs.Screen name="notifications" options={{ href: null }} />
+      <Tabs.Screen name="chat" options={{ href: null }} />
     </Tabs>
   );
 }
