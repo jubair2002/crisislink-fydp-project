@@ -45,8 +45,10 @@ export default function RootLayout() {
     // The second segment is the screen name within the group, e.g. 'login'.
     const screen = segs[1];
 
+    const isCampaignGuestRoute = inMainGroup && segs[1] === 'campaigns';
+
     if (!user) {
-      if (!inAuthGroup) router.replace('/(auth)/welcome');
+      if (!inAuthGroup && !isCampaignGuestRoute) router.replace('/(auth)/welcome');
       return;
     }
 

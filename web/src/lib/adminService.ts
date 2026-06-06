@@ -20,6 +20,14 @@ import type {
   VolunteerDetailPayload,
   VolunteerListFilters,
   VolunteerListRow,
+  CampaignFilters,
+  CampaignDetailPayload,
+  CampaignRow,
+  CampaignUpdateAdminRow,
+  CampaignResourceAdminRow,
+  DonationAdminRow,
+  DonationFilters,
+  CampaignFundSummary,
 } from '@/types/admin';
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -956,4 +964,353 @@ export async function deleteDisasterAndAssets(adminId: string, disasterId: strin
   await logAction(adminId, 'disaster_deleted', 'disaster', disasterId, {
     storage_paths_removed: storagePaths.length,
   });
+}
+
+// ── Campaign management ─────────────────────────────────────────────────────
+
+export async function getCampaigns(filters: CampaignFilters = {}): Promise<CampaignRow[]> {
+  const supabase = db();
+  let q = supabase.from('campaigns').select('*');
+
+  if (filters.status) q = q.eq('status', filters.status);
+  if (filters.search?.trim()) q = q.ilike('title', `%${filters.search.trim()}%`);
+
+  const sortBy = filters.sortBy ?? 'start_date';
+  const ascending = filters.sortDir === 'asc';
+  q = q.order(sortBy, { ascending, nullsFirst: false });
+
+  const { data, error } = await q.limit(200);
+  if (error) throw unwrapAdminError(new Error(error.message));
+  return (data ?? []) as CampaignRow[];
+}
+
+export async function getCampaignDetailPayload(campaignId: string): Promise<CampaignDetailPayload | null> {
+  const supabase = db();
+
+  const { data: campaign, error: cErr } = await supabase
+    .from('campaigns')
+    .select('*')
+    .eq('id', campaignId)
+    .maybeSingle();
+  if (cErr) throw unwrapAdminError(new Error(cErr.message));
+  if (!campaign) return null;
+
+  const [updatesRes, resourcesRes, donationsRes, disasterRes] = await Promise.all([
+    supabase.from('campaign_updates').select('*').eq('campaign_id', campaignId).order('created_at', { ascending: false }),
+    supabase.from('campaign_resources').select('*').eq('campaign_id', campaignId).order('updated_at', { ascending: false }),
+    supabase.from('donations').select('*, campaigns(title)').eq('campaign_id', campaignId).order('created_at', { ascending: false }).limit(100),
+    (campaign as CampaignRow).disaster_id
+      ? supabase.from('disasters').select('id, disaster_type, location_label').eq('id', (campaign as CampaignRow).disaster_id!).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+  ]);
+
+  if (updatesRes.error) throw unwrapAdminError(new Error(updatesRes.error.message));
+  if (resourcesRes.error) throw unwrapAdminError(new Error(resourcesRes.error.message));
+  if (donationsRes.error) throw unwrapAdminError(new Error(donationsRes.error.message));
+
+  return {
+    campaign: campaign as CampaignRow,
+    updates: (updatesRes.data ?? []) as CampaignUpdateAdminRow[],
+    resources: (resourcesRes.data ?? []) as CampaignResourceAdminRow[],
+    donations: (donationsRes.data ?? []) as DonationAdminRow[],
+    disaster: (disasterRes.data as { id: string; disaster_type: string | null; location_label: string | null } | null) ?? null,
+  };
+}
+
+export async function createCampaign(
+  adminId: string,
+  input: {
+    title: string;
+    description?: string;
+    location?: string;
+    disaster_id?: string | null;
+    target_amount: number;
+    start_date?: string | null;
+    end_date?: string | null;
+    media_url?: string | null;
+  },
+): Promise<string> {
+  const supabase = db();
+  const { data, error } = await supabase
+    .from('campaigns')
+    .insert({
+      title: input.title.trim(),
+      description: input.description?.trim() || null,
+      location: input.location?.trim() || null,
+      disaster_id: input.disaster_id || null,
+      target_amount: input.target_amount,
+      goal_amount: input.target_amount,
+      collected_amount: 0,
+      start_date: input.start_date || null,
+      end_date: input.end_date || null,
+      media_url: input.media_url || null,
+      status: 'active',
+    })
+    .select('id')
+    .single();
+
+  if (error) throw unwrapAdminError(new Error(error.message));
+  const id = String(data.id);
+  await logAction(adminId, 'campaign_created', 'campaign', id, { title: input.title });
+  return id;
+}
+
+export async function updateCampaignStatus(
+  adminId: string,
+  campaignId: string,
+  status: string,
+): Promise<void> {
+  const supabase = db();
+  const { error } = await supabase.from('campaigns').update({ status }).eq('id', campaignId);
+  if (error) throw unwrapAdminError(new Error(error.message));
+  await logAction(adminId, 'campaign_status_updated', 'campaign', campaignId, { status });
+}
+
+export async function updateCampaign(
+  adminId: string,
+  campaignId: string,
+  patch: Partial<{
+    title: string;
+    description: string;
+    location: string;
+    target_amount: number;
+    end_date: string;
+    media_url: string;
+  }>,
+): Promise<void> {
+  const supabase = db();
+  const { error } = await supabase.from('campaigns').update(patch).eq('id', campaignId);
+  if (error) throw unwrapAdminError(new Error(error.message));
+  await logAction(adminId, 'campaign_updated', 'campaign', campaignId, patch);
+}
+
+export async function addCampaignUpdate(
+  adminId: string,
+  campaignId: string,
+  input: { title: string; description?: string; media_url?: string | null },
+): Promise<void> {
+  const supabase = db();
+  const { error } = await supabase.from('campaign_updates').insert({
+    campaign_id: campaignId,
+    title: input.title.trim(),
+    description: input.description?.trim() || null,
+    media_url: input.media_url || null,
+  });
+  if (error) throw unwrapAdminError(new Error(error.message));
+  await logAction(adminId, 'campaign_update_posted', 'campaign', campaignId, { title: input.title });
+}
+
+export async function upsertCampaignResource(
+  adminId: string,
+  campaignId: string,
+  input: {
+    id?: string;
+    resource_type: string;
+    quantity_pledged?: number;
+    quantity_purchased?: number;
+    purchase_amount?: number;
+    quantity_distributed?: number;
+  },
+): Promise<void> {
+  const supabase = db();
+  const row = {
+    campaign_id: campaignId,
+    resource_type: input.resource_type.trim(),
+    quantity_pledged: input.quantity_pledged ?? 0,
+    quantity_purchased: input.quantity_purchased ?? 0,
+    purchase_amount: input.purchase_amount ?? 0,
+    quantity_distributed: input.quantity_distributed ?? 0,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.id) {
+    const { error } = await supabase.from('campaign_resources').update(row).eq('id', input.id);
+    if (error) throw unwrapAdminError(new Error(error.message));
+  } else {
+    const { error } = await supabase.from('campaign_resources').insert(row);
+    if (error) throw unwrapAdminError(new Error(error.message));
+  }
+  await logAction(adminId, 'campaign_resource_updated', 'campaign', campaignId, { resource_type: input.resource_type });
+}
+
+export async function getDonations(filters: DonationFilters = {}): Promise<DonationAdminRow[]> {
+  const supabase = db();
+  let q = supabase.from('donations').select('*, campaigns(title)').order('created_at', { ascending: false });
+
+  if (filters.status) q = q.eq('payment_status', filters.status);
+  if (filters.campaignId) q = q.eq('campaign_id', filters.campaignId);
+  if (filters.dateFrom) q = q.gte('created_at', filters.dateFrom);
+  if (filters.dateTo) q = q.lte('created_at', `${filters.dateTo}T23:59:59`);
+
+  const { data, error } = await q.limit(300);
+  if (error) throw unwrapAdminError(new Error(error.message));
+  return (data ?? []) as DonationAdminRow[];
+}
+
+export async function addDonationTrackingEntry(
+  adminId: string,
+  donationId: string,
+  input: { status: string; description?: string; proof_url?: string | null; amount?: number | null },
+): Promise<void> {
+  const supabase = db();
+  const { error } = await supabase.from('donation_tracking').insert({
+    donation_id: donationId,
+    status: input.status.trim(),
+    amount: input.amount ?? null,
+    description: input.description?.trim() || null,
+    proof_url: input.proof_url || null,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) throw unwrapAdminError(new Error(error.message));
+  await logAction(adminId, 'donation_tracking_added', 'donation', donationId, {
+    status: input.status,
+    amount: input.amount ?? null,
+  });
+}
+
+const ALLOCATION_STATUSES = new Set(['Allocated', 'Used']);
+
+function trackingEntryAmount(
+  entry: { status: string | null; amount: number | null },
+  donationAmount: number,
+): number {
+  if (!entry.status || !ALLOCATION_STATUSES.has(entry.status)) return 0;
+  if (entry.amount != null) return Number(entry.amount);
+  return donationAmount;
+}
+
+async function sumDonationAllocated(
+  supabase: ReturnType<typeof db>,
+  donationId: string,
+  donationAmount: number,
+): Promise<number> {
+  const { data, error } = await supabase
+    .from('donation_tracking')
+    .select('status, amount')
+    .eq('donation_id', donationId);
+  if (error) throw unwrapAdminError(new Error(error.message));
+
+  return (data ?? []).reduce(
+    (sum, row) => sum + trackingEntryAmount(row, donationAmount),
+    0,
+  );
+}
+
+export async function getCampaignFundSummary(campaignId: string): Promise<CampaignFundSummary | null> {
+  const supabase = db();
+
+  const { data: campaign, error: cErr } = await supabase
+    .from('campaigns')
+    .select('id, title')
+    .eq('id', campaignId)
+    .maybeSingle();
+  if (cErr) throw unwrapAdminError(new Error(cErr.message));
+  if (!campaign) return null;
+
+  const { data: donations, error: dErr } = await supabase
+    .from('donations')
+    .select('id, amount')
+    .eq('campaign_id', campaignId)
+    .eq('payment_status', 'paid')
+    .order('created_at', { ascending: true });
+  if (dErr) throw unwrapAdminError(new Error(dErr.message));
+
+  const paidDonations = donations ?? [];
+  let collected = 0;
+  let allocated = 0;
+
+  for (const donation of paidDonations) {
+    const amount = Number(donation.amount ?? 0);
+    collected += amount;
+    allocated += await sumDonationAllocated(supabase, donation.id, amount);
+  }
+
+  return {
+    campaignId: campaign.id,
+    title: campaign.title ?? 'Campaign',
+    collected,
+    allocated,
+    available: Math.max(0, collected - allocated),
+    paidDonationCount: paidDonations.length,
+  };
+}
+
+export async function bulkAllocateCampaignFunds(
+  adminId: string,
+  campaignId: string,
+  input: {
+    amount: number;
+    status?: string;
+    description?: string;
+    proof_url?: string | null;
+  },
+): Promise<{ entriesCreated: number; amountAllocated: number }> {
+  const amount = Number(input.amount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error('Enter a valid allocation amount greater than zero.');
+  }
+
+  const status = (input.status?.trim() || 'Allocated').trim();
+  if (!ALLOCATION_STATUSES.has(status)) {
+    throw new Error('Bulk allocation status must be Allocated or Used.');
+  }
+
+  const summary = await getCampaignFundSummary(campaignId);
+  if (!summary) throw new Error('Campaign not found.');
+  if (amount > summary.available + 0.001) {
+    throw new Error(
+      `Only ৳${summary.available.toLocaleString()} is available to allocate for this campaign.`,
+    );
+  }
+
+  const supabase = db();
+  const { data: donations, error: dErr } = await supabase
+    .from('donations')
+    .select('id, amount, donation_code')
+    .eq('campaign_id', campaignId)
+    .eq('payment_status', 'paid')
+    .order('created_at', { ascending: true });
+  if (dErr) throw unwrapAdminError(new Error(dErr.message));
+
+  let remaining = amount;
+  let entriesCreated = 0;
+  const baseDescription =
+    input.description?.trim() ||
+    `Bulk ${status.toLowerCase()} from campaign fund pool.`;
+  const now = new Date().toISOString();
+
+  for (const donation of donations ?? []) {
+    if (remaining <= 0) break;
+
+    const donationAmount = Number(donation.amount ?? 0);
+    const alreadyAllocated = await sumDonationAllocated(supabase, donation.id, donationAmount);
+    const unallocated = donationAmount - alreadyAllocated;
+    if (unallocated <= 0) continue;
+
+    const slice = Math.min(remaining, unallocated);
+    const { error } = await supabase.from('donation_tracking').insert({
+      donation_id: donation.id,
+      status,
+      amount: slice,
+      description: baseDescription,
+      proof_url: input.proof_url || null,
+      updated_at: now,
+    });
+    if (error) throw unwrapAdminError(new Error(error.message));
+
+    entriesCreated += 1;
+    remaining -= slice;
+  }
+
+  if (remaining > 0.001) {
+    throw new Error('Could not allocate the full amount. Please refresh and try again.');
+  }
+
+  await logAction(adminId, 'campaign_bulk_allocation', 'campaign', campaignId, {
+    amount,
+    status,
+    entries_created: entriesCreated,
+  });
+
+  return { entriesCreated, amountAllocated: amount };
 }

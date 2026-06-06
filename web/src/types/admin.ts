@@ -195,3 +195,94 @@ export interface DisasterDetailPayload {
   assignments: TaskAssignmentRow[];
   resourceRequests: ResourceRequestRow[];
 }
+
+export interface CampaignFilters {
+  status?: string;
+  search?: string;
+  sortBy?: 'start_date' | 'end_date' | 'collected_amount';
+  sortDir?: 'asc' | 'desc';
+}
+
+export interface CampaignRow {
+  id: string;
+  title: string;
+  description: string | null;
+  location: string | null;
+  disaster_id: string | null;
+  target_amount: number | null;
+  collected_amount: number | null;
+  goal_amount: number | null;
+  start_date: string | null;
+  end_date: string | null;
+  status: string | null;
+  media_url: string | null;
+}
+
+export interface CampaignUpdateAdminRow {
+  id: string;
+  campaign_id: string;
+  title: string;
+  description: string | null;
+  media_url: string | null;
+  created_at: string | null;
+}
+
+export interface CampaignResourceAdminRow {
+  id: string;
+  campaign_id: string;
+  resource_type: string;
+  quantity_pledged: number;
+  quantity_purchased: number;
+  purchase_amount: number;
+  quantity_distributed: number;
+  updated_at: string | null;
+}
+
+export interface DonationAdminRow {
+  id: string;
+  donation_code: string | null;
+  campaign_id: string | null;
+  user_id: string | null;
+  donor_name: string | null;
+  anonymous: boolean | null;
+  amount: number;
+  payment_method: string | null;
+  transaction_id: string | null;
+  payment_status: string | null;
+  created_at: string | null;
+  campaigns?: { title: string | null } | null;
+}
+
+export interface DonationTrackingAdminRow {
+  id: string;
+  donation_id: string;
+  status: string | null;
+  amount: number | null;
+  description: string | null;
+  proof_url: string | null;
+  updated_at: string | null;
+}
+
+export interface CampaignFundSummary {
+  campaignId: string;
+  title: string;
+  collected: number;
+  allocated: number;
+  available: number;
+  paidDonationCount: number;
+}
+
+export interface DonationFilters {
+  status?: string;
+  campaignId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface CampaignDetailPayload {
+  campaign: CampaignRow;
+  updates: CampaignUpdateAdminRow[];
+  resources: CampaignResourceAdminRow[];
+  donations: DonationAdminRow[];
+  disaster: { id: string; disaster_type: string | null; location_label: string | null } | null;
+}

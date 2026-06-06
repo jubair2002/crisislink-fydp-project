@@ -24,8 +24,19 @@ import {
   updateDisasterSeverityByAdmin,
   updateDisasterStatus,
   upgradeToVolunteer,
+  getCampaigns,
+  getCampaignDetailPayload,
+  createCampaign,
+  updateCampaignStatus,
+  updateCampaign,
+  addCampaignUpdate,
+  upsertCampaignResource,
+  getDonations,
+  addDonationTrackingEntry,
+  getCampaignFundSummary,
+  bulkAllocateCampaignFunds,
 } from '@/lib/adminService';
-import type { DisasterFilters, TaskFilters, UserListFilters } from '@/types/admin';
+import type { DisasterFilters, TaskFilters, UserListFilters, CampaignFilters, DonationFilters } from '@/types/admin';
 
 async function requireAdmin() {
   const user = await getCurrentUser();
@@ -208,4 +219,115 @@ export async function approveTaskCompletionAction(taskId: string) {
   await approveTaskCompletion(adminId, taskId);
   revalidatePath(`${adminPrefix()}/tasks`);
   revalidatePath(`${adminPrefix()}/tasks/monitor`);
+}
+
+export async function getCampaignsAction(filters: CampaignFilters) {
+  await requireAdmin();
+  return getCampaigns(filters);
+}
+
+export async function getCampaignDetailAction(campaignId: string) {
+  await requireAdmin();
+  const data = await getCampaignDetailPayload(campaignId);
+  if (!data) throw new Error('Campaign not found');
+  return data;
+}
+
+export async function createCampaignAction(input: {
+  title: string;
+  description?: string;
+  location?: string;
+  disaster_id?: string | null;
+  target_amount: number;
+  start_date?: string | null;
+  end_date?: string | null;
+  media_url?: string | null;
+}) {
+  const adminId = await requireAdmin();
+  const id = await createCampaign(adminId, input);
+  revalidatePath(`${adminPrefix()}/campaigns`);
+  return id;
+}
+
+export async function updateCampaignStatusAction(campaignId: string, status: string) {
+  const adminId = await requireAdmin();
+  await updateCampaignStatus(adminId, campaignId, status);
+  revalidatePath(`${adminPrefix()}/campaigns`);
+  revalidatePath(`${adminPrefix()}/campaigns/${campaignId}`);
+}
+
+export async function updateCampaignAction(
+  campaignId: string,
+  patch: {
+    title?: string;
+    description?: string;
+    location?: string;
+    target_amount?: number;
+    end_date?: string;
+    media_url?: string;
+  },
+) {
+  const adminId = await requireAdmin();
+  await updateCampaign(adminId, campaignId, patch);
+  revalidatePath(`${adminPrefix()}/campaigns`);
+  revalidatePath(`${adminPrefix()}/campaigns/${campaignId}`);
+}
+
+export async function addCampaignUpdateAction(
+  campaignId: string,
+  input: { title: string; description?: string; media_url?: string | null },
+) {
+  const adminId = await requireAdmin();
+  await addCampaignUpdate(adminId, campaignId, input);
+  revalidatePath(`${adminPrefix()}/campaigns/${campaignId}`);
+}
+
+export async function upsertCampaignResourceAction(
+  campaignId: string,
+  input: {
+    id?: string;
+    resource_type: string;
+    quantity_pledged?: number;
+    quantity_purchased?: number;
+    purchase_amount?: number;
+    quantity_distributed?: number;
+  },
+) {
+  const adminId = await requireAdmin();
+  await upsertCampaignResource(adminId, campaignId, input);
+  revalidatePath(`${adminPrefix()}/campaigns/${campaignId}`);
+}
+
+export async function getDonationsAction(filters: DonationFilters) {
+  await requireAdmin();
+  return getDonations(filters);
+}
+
+export async function addDonationTrackingAction(
+  donationId: string,
+  input: { status: string; description?: string; proof_url?: string | null; amount?: number | null },
+) {
+  const adminId = await requireAdmin();
+  await addDonationTrackingEntry(adminId, donationId, input);
+  revalidatePath(`${adminPrefix()}/donations`);
+}
+
+export async function getCampaignFundSummaryAction(campaignId: string) {
+  await requireAdmin();
+  return getCampaignFundSummary(campaignId);
+}
+
+export async function bulkAllocateCampaignFundsAction(
+  campaignId: string,
+  input: {
+    amount: number;
+    status?: string;
+    description?: string;
+    proof_url?: string | null;
+  },
+) {
+  const adminId = await requireAdmin();
+  const result = await bulkAllocateCampaignFunds(adminId, campaignId, input);
+  revalidatePath(`${adminPrefix()}/donations`);
+  return result;
 }

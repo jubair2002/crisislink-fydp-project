@@ -7,11 +7,12 @@ export type HomeDisaster = DisasterRow & {
 export interface CampaignRow {
   id: string;
   title: string;
-  location_label?: string | null;
+  location?: string | null;
   status: string;
   target_amount: number;
   collected_amount: number;
-  ends_at?: string | null;
+  end_date?: string | null;
+  media_url?: string | null;
   created_at?: string;
 }
 
@@ -29,7 +30,7 @@ export interface CampaignUpdateRow {
   id: string;
   campaign_id: string;
   title: string;
-  body?: string | null;
+  description?: string | null;
   created_at: string;
   campaigns?: { title: string } | null;
 }

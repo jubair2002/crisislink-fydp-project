@@ -13,6 +13,7 @@ import {
   fetchCampaignUpdates,
   fetchActiveTaskAssignment,
   fetchVolunteerNearbyDisasters,
+  fetchCampaignsNeedingVolunteers,
   respondToTaskRequest,
   updateAvailabilityStatus,
 } from '../services/homeService';
@@ -133,8 +134,14 @@ export const useHomeStore = create<HomeState>((set, get) => ({
           set({
             pendingTaskRequests: [],
             activeTask: active,
-            campaignsNeedingVolunteers: [],
           }),
+        set,
+        get,
+      ),
+      runSection(
+        'volunteerCampaigns',
+        () => fetchCampaignsNeedingVolunteers(5),
+        (campaignsNeedingVolunteers) => set({ campaignsNeedingVolunteers }),
         set,
         get,
       ),

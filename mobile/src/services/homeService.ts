@@ -76,19 +76,20 @@ export async function fetchActiveCampaigns(limit: number): Promise<CampaignRow[]
       .from('campaigns')
       .select('*')
       .eq('status', 'active')
-      .order('created_at', { ascending: false })
+      .order('start_date', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
     return ((data ?? []) as Record<string, unknown>[]).map((row) => ({
       id: String(row.id),
       title: String(row.title ?? 'Campaign'),
-      location_label: (row.location_label as string) ?? null,
+      location: (row.location as string) ?? (row.location_label as string) ?? null,
       status: String(row.status ?? 'active'),
-      target_amount: Number(row.target_amount ?? 0),
+      target_amount: Number(row.target_amount ?? row.goal_amount ?? 0),
       collected_amount: Number(row.collected_amount ?? 0),
-      ends_at: (row.ends_at as string) ?? null,
-      created_at: row.created_at as string | undefined,
+      end_date: (row.end_date as string) ?? (row.ends_at as string) ?? null,
+      media_url: (row.media_url as string) ?? null,
+      created_at: (row.start_date as string) ?? undefined,
     }));
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -141,7 +142,7 @@ export async function fetchCampaignUpdates(limit: number): Promise<CampaignUpdat
         id,
         campaign_id,
         title,
-        body,
+        description,
         created_at,
         campaigns ( title )
       `,
@@ -154,7 +155,7 @@ export async function fetchCampaignUpdates(limit: number): Promise<CampaignUpdat
       id: String(row.id),
       campaign_id: String(row.campaign_id ?? ''),
       title: String(row.title ?? 'Update'),
-      body: (row.body as string) ?? null,
+      description: (row.description as string) ?? (row.body as string) ?? null,
       created_at: String(row.created_at ?? new Date().toISOString()),
       campaigns: row.campaigns as { title: string } | null,
     }));
@@ -258,7 +259,7 @@ export async function fetchCampaignsNeedingVolunteers(limit: number): Promise<Vo
     return fallback.map((c) => ({
       campaign_id: c.id,
       title: c.title,
-      location: c.location_label ?? '—',
+      location: c.location ?? '—',
       help_type: 'Volunteers needed',
     }));
   };
@@ -270,10 +271,12 @@ export async function fetchCampaignsNeedingVolunteers(limit: number): Promise<Vo
         `
         help_type,
         task_type,
+        campaign_id,
         assignment_mode,
         status,
         disaster:disasters ( location_label ),
-        campaign:campaigns ( id, title, location_label )
+        campaign_id,
+        campaign:campaigns ( id, title, location )
       `,
       )
       .eq('status', 'requested')
@@ -287,14 +290,15 @@ export async function fetchCampaignsNeedingVolunteers(limit: number): Promise<Vo
 
     for (const row of data ?? []) {
       const r = row as Record<string, unknown>;
-      const campaign = r.campaign as { id?: string; title?: string; location_label?: string | null } | null;
+      const campaign = r.campaign as { id?: string; title?: string; location?: string | null } | null;
+      const taskCampaignId = r.campaign_id ? String(r.campaign_id) : '';
       const disaster = r.disaster as { location_label?: string | null } | null;
       const helpType = String(r.help_type ?? r.task_type ?? 'support');
 
-      const campaignId = campaign?.id ? String(campaign.id) : '';
+      const campaignId = campaign?.id ? String(campaign.id) : taskCampaignId;
       const title = campaign?.title ? String(campaign.title) : 'Relief operation';
       const location =
-        String(campaign?.location_label ?? disaster?.location_label ?? 'Area TBD');
+        String(campaign?.location ?? disaster?.location_label ?? 'Area TBD');
 
       const key = campaignId || `${title}-${helpType}-${location}`;
       if (seen.has(key)) continue;
