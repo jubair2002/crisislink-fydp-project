@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,30 +8,23 @@ import {
   Image,
   RefreshControl,
   StatusBar,
-  Dimensions,
-  FlatList,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
-import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../constants/colors';
-import { HeaderGlassCircleButton } from '../../components/HeaderGlassCircleButton';
+import { NotificationBellButton } from '../../components/NotificationBellButton';
+import { LatestBroadcastBanner } from '../../components/LatestBroadcastBanner';
+import { CampaignCarousel } from '../../components/CampaignCarousel';
 import { useAuthStore } from '../../store/authStore';
 import { useHomeStore } from '../../store/homeStore';
-import type { CampaignRow } from '../../types/home';
 import { useHomeLocation } from './useHomeLocation';
 import { SectionTitle, SectionSkeleton, EmptyHint, formatTimeAgo } from './homeShared';
 import { ExpandableServiceGrid, type HomeServiceItem } from './ExpandableServiceGrid';
-import { CampaignCoverImage } from '../../components/CampaignCoverImage';
+import { openGeneralChannel } from '../chat/openGeneralChannel';
 
-const { width: SCREEN_W } = Dimensions.get('window');
 const PAGE_PAD = 16;
-const SLIDE_W = SCREEN_W - PAGE_PAD * 2;
-const SLIDE_H = 220;
 
 const SERVICE_ITEMS: HomeServiceItem[] = [
   { icon: 'map-outline', label: 'Live Map', onPress: () => router.push('/(main)/disasters') },
@@ -39,58 +32,13 @@ const SERVICE_ITEMS: HomeServiceItem[] = [
   { icon: 'heart-outline', label: 'Donate', onPress: () => router.push('/(main)/campaigns') },
   { icon: 'time-outline', label: 'Donation History', onPress: () => router.push('/(main)/campaigns/history') },
   { icon: 'albums-outline', label: 'Campaigns', onPress: () => router.push('/(main)/campaigns') },
-  { icon: 'people-outline', label: 'Community', onPress: () => router.push('/(main)/chat') },
+  { icon: 'people-outline', label: 'Community', onPress: () => void openGeneralChannel() },
   { icon: 'notifications-outline', label: 'Alerts', onPress: () => router.push('/(main)/notifications') },
   { icon: 'person-outline', label: 'Profile', onPress: () => router.push('/(main)/profile') },
   { icon: 'warning-outline', label: 'Disasters', onPress: () => router.push('/(main)/disasters') },
-  { icon: 'chatbubble-outline', label: 'Messages', onPress: () => router.push('/(main)/chat') },
+  { icon: 'chatbubble-outline', label: 'Messages', onPress: () => void openGeneralChannel() },
   { icon: 'help-circle-outline', label: 'Support', onPress: () => router.push('/(main)/campaigns') },
 ];
-
-function CampaignCarouselSlide({ item }: { item: CampaignRow }) {
-  const target = Math.max(1, item.target_amount || 1);
-  const pct = Math.min(100, Math.round(((item.collected_amount || 0) / target) * 100));
-  return (
-    <TouchableOpacity
-      activeOpacity={0.92}
-      style={[styles.slideCard, { width: SLIDE_W, height: SLIDE_H }]}
-      onPress={() => router.push(`/(main)/campaigns/${item.id}`)}
-    >
-      <CampaignCoverImage uri={item.media_url} height={SLIDE_H} rounded={16} />
-
-      <LinearGradient
-        colors={['transparent', 'rgba(15,23,42,0.55)', 'rgba(15,23,42,0.92)']}
-        style={styles.slideGradient}
-      >
-        <View style={styles.slideContent}>
-          <Text style={styles.slideTitle} numberOfLines={2}>
-            {item.title}
-          </Text>
-          <View style={styles.slideMetaRow}>
-            <Ionicons name="location-outline" size={13} color="#E2E8F0" />
-            <Text style={styles.slideLoc} numberOfLines={1}>
-              {item.location ?? 'Nationwide'}
-            </Text>
-          </View>
-          <View style={styles.slideProgressBg}>
-            <View style={[styles.slideProgressFg, { width: `${pct}%` }]} />
-          </View>
-          <View style={styles.slideBottomRow}>
-            <Text style={styles.slideAmt}>
-              {pct}% · {'\u09f3'}
-              {Math.round(item.collected_amount ?? 0).toLocaleString()} / {'\u09f3'}
-              {Math.round(item.target_amount ?? 0).toLocaleString()}
-            </Text>
-            <View style={styles.slideCta}>
-              <Text style={styles.slideCtaText}>Donate</Text>
-              <Ionicons name="chevron-forward" size={14} color="#FFF" />
-            </View>
-          </View>
-        </View>
-      </LinearGradient>
-    </TouchableOpacity>
-  );
-}
 
 export default function CitizenHomeScreen() {
   const profile = useAuthStore((s) => s.profile);
@@ -104,7 +52,6 @@ export default function CitizenHomeScreen() {
   const fetchCitizenHomeData = useHomeStore((s) => s.fetchCitizenHomeData);
 
   const [refreshing, setRefreshing] = useState(false);
-  const [carouselDot, setCarouselDot] = useState(0);
 
   const loadData = useCallback(async () => {
     const coords = await refreshCoords();
@@ -127,14 +74,6 @@ export default function CitizenHomeScreen() {
   }, [loadData]);
 
   const displayName = profile?.name ?? user?.email ?? 'User';
-
-  const sliderA = useMemo(() => activeCampaigns.slice(0, 5), [activeCampaigns]);
-
-  const onMomentumScrollEndA = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const x = e.nativeEvent.contentOffset.x;
-    const idx = Math.round(x / SLIDE_W);
-    setCarouselDot(Math.max(0, Math.min(sliderA.length - 1, idx)));
-  };
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -164,16 +103,13 @@ export default function CitizenHomeScreen() {
                 Hi, {displayName}
               </Text>
             </View>
-            <HeaderGlassCircleButton
-              accessibilityLabel="Notifications"
-              onPress={() => router.push('/(main)/notifications')}
-            >
-              <Ionicons name="notifications-outline" size={21} color={Colors.textPrimary} />
-            </HeaderGlassCircleButton>
+            <NotificationBellButton />
           </View>
         </View>
 
         <Text style={styles.tagline}>Relief updates and donations in one place.</Text>
+
+        <LatestBroadcastBanner />
 
         {profile && !profile.profile_completed ? (
           <TouchableOpacity
@@ -205,29 +141,10 @@ export default function CitizenHomeScreen() {
           <SectionTitle title="Active campaigns" actionLabel="See all" onAction={() => router.push('/(main)/campaigns')} />
           {loadingSections.campaigns ? (
             <SectionSkeleton rows={1} />
-          ) : sliderA.length === 0 ? (
+          ) : activeCampaigns.length === 0 ? (
             <EmptyHint icon="albums-outline" text="No active campaigns." />
           ) : (
-            <>
-              <FlatList
-                horizontal
-                data={sliderA}
-                keyExtractor={(it) => it.id}
-                showsHorizontalScrollIndicator={false}
-                pagingEnabled
-                snapToInterval={SLIDE_W}
-                decelerationRate="fast"
-                onMomentumScrollEnd={onMomentumScrollEndA}
-                renderItem={({ item }) => <CampaignCarouselSlide item={item} />}
-              />
-              {sliderA.length > 1 ? (
-                <View style={styles.dots}>
-                  {sliderA.map((_, i) => (
-                    <View key={i} style={[styles.dot, i === carouselDot && styles.dotOn]} />
-                  ))}
-                </View>
-              ) : null}
-            </>
+            <CampaignCarousel campaigns={activeCampaigns} />
           )}
         </View>
 
@@ -335,61 +252,6 @@ const styles = StyleSheet.create({
   section: { marginBottom: 18, paddingHorizontal: PAGE_PAD },
 
   campaignSection: { marginBottom: 18, paddingHorizontal: PAGE_PAD },
-
-  slideCard: {
-    overflow: 'hidden',
-    backgroundColor: '#DBEAFE',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  slideGradient: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'flex-end',
-  },
-  slideContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    paddingTop: 40,
-  },
-  slideTitle: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
-  slideMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
-  slideLoc: { fontSize: 13, color: '#E2E8F0', flex: 1 },
-  slideProgressBg: {
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    marginTop: 12,
-    overflow: 'hidden',
-  },
-  slideProgressFg: { height: '100%', backgroundColor: '#FFFFFF', borderRadius: 3 },
-  slideBottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 10,
-    gap: 8,
-  },
-  slideAmt: { fontSize: 12, color: '#F1F5F9', fontWeight: '600', flex: 1 },
-  slideCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  slideCtaText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
-
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 12,
-  },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#CBD5E1' },
-  dotOn: { backgroundColor: Colors.primary, width: 18 },
 
   updatesShell: {
     backgroundColor: Colors.card,

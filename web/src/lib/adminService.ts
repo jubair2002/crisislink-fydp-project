@@ -28,6 +28,9 @@ import type {
   DonationAdminRow,
   DonationFilters,
   CampaignFundSummary,
+  BroadcastAdminRow,
+  BroadcastTargetType,
+  ChatMonitorRow,
 } from '@/types/admin';
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -1313,4 +1316,291 @@ export async function bulkAllocateCampaignFunds(
   });
 
   return { entriesCreated, amountAllocated: amount };
+}
+
+// ─── Chat monitoring & broadcasts ────────────────────────────────────────────
+
+function formatAnnouncementContent(title: string, message: string): string {
+  return `📢 ${title}\n\n${message}`;
+}
+
+export async function getAdminBroadcasts(limit = 50): Promise<BroadcastAdminRow[]> {
+  const supabase = db();
+  const { data, error } = await supabase
+    .from('broadcasts')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw unwrapAdminError(new Error(error.message));
+
+  const rows = (data ?? []) as BroadcastAdminRow[];
+  const enriched: BroadcastAdminRow[] = [];
+
+  for (const row of rows) {
+    const { count } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('broadcast_id', row.id);
+
+    enriched.push({ ...row, recipient_count: count ?? 0 });
+  }
+
+  return enriched;
+}
+
+export async function getChatRoomsForMonitoring(): Promise<ChatMonitorRow[]> {
+  const supabase = db();
+  const { data, error } = await supabase
+    .from('chats')
+    .select('*')
+    .order('last_message_at', { ascending: false, nullsFirst: false })
+    .limit(100);
+
+  if (error) throw unwrapAdminError(new Error(error.message));
+
+  const chats = data ?? [];
+  const out: ChatMonitorRow[] = [];
+
+  for (const chat of chats) {
+    const { count } = await supabase
+      .from('chat_members')
+      .select('*', { count: 'exact', head: true })
+      .eq('chat_id', chat.id);
+
+    out.push({
+      id: String(chat.id),
+      type: String(chat.type ?? 'channel'),
+      name: String(chat.name ?? 'Chat'),
+      channel_slug: chat.channel_slug ?? null,
+      description: chat.description ?? null,
+      last_message_at: chat.last_message_at ?? null,
+      last_message_preview: chat.last_message_preview ?? null,
+      member_count: count ?? 0,
+      created_at: String(chat.created_at ?? new Date().toISOString()),
+    });
+  }
+
+  return out;
+}
+
+export async function sendAdminBroadcast(
+  adminId: string,
+  targetType: BroadcastTargetType,
+  title: string,
+  message: string,
+  targetCampaignId?: string | null,
+): Promise<string> {
+  const supabase = db();
+  const trimmedTitle = title.trim();
+  const trimmedMessage = message.trim();
+  if (!trimmedTitle || !trimmedMessage) throw new Error('Title and message are required.');
+
+  const { data: broadcast, error } = await supabase
+    .from('broadcasts')
+    .insert({
+      admin_id: adminId,
+      target_type: targetType,
+      target_campaign_id: targetCampaignId ?? null,
+      title: trimmedTitle,
+      message: trimmedMessage,
+    })
+    .select('id')
+    .single();
+
+  if (error || !broadcast) throw unwrapAdminError(new Error(error?.message ?? 'Broadcast failed.'));
+
+  let userIds: string[] = [];
+
+  if (targetType === 'all') {
+    const { data } = await supabase.from('profiles').select('user_id');
+    userIds = (data ?? []).map((p) => String(p.user_id));
+  } else if (targetType === 'volunteers') {
+    const { data } = await supabase.from('profiles').select('user_id').eq('role', 'volunteer');
+    userIds = (data ?? []).map((p) => String(p.user_id));
+  } else if (targetType === 'campaign' && targetCampaignId) {
+    const { data } = await supabase
+      .from('campaign_volunteers')
+      .select('volunteer_user_id')
+      .eq('campaign_id', targetCampaignId)
+      .eq('status', 'active');
+    userIds = (data ?? []).map((v) => String(v.volunteer_user_id));
+  }
+
+  if (userIds.length) {
+    const now = new Date().toISOString();
+    const chunkSize = 100;
+    for (let i = 0; i < userIds.length; i += chunkSize) {
+      const chunk = userIds.slice(i, i + chunkSize);
+      const { error: nErr } = await supabase.from('notifications').insert(
+        chunk.map((userId) => ({
+          user_id: userId,
+          type: 'broadcast',
+          title: trimmedTitle,
+          message: trimmedMessage,
+          is_read: false,
+          created_at: now,
+          broadcast_id: broadcast.id,
+        })),
+      );
+      if (nErr) throw unwrapAdminError(new Error(nErr.message));
+    }
+  }
+
+  // Mirror broadcast into #announcements channel for chat visibility
+  const { data: annChannel } = await supabase
+    .from('chats')
+    .select('id')
+    .eq('type', 'channel')
+    .eq('channel_slug', 'announcements')
+    .maybeSingle();
+
+  if (annChannel?.id) {
+    const { data: annMsg, error: msgErr } = await supabase
+      .from('messages')
+      .insert({
+        chat_id: annChannel.id,
+        sender_id: adminId,
+        content: formatAnnouncementContent(trimmedTitle, trimmedMessage),
+        type: 'text',
+        status: 'sent',
+      })
+      .select('id')
+      .single();
+
+    if (!msgErr && annMsg?.id) {
+      await supabase
+        .from('broadcasts')
+        .update({ announcement_message_id: annMsg.id })
+        .eq('id', broadcast.id);
+    }
+  }
+
+  await logAction(adminId, 'send_broadcast', 'broadcast', String(broadcast.id), {
+    target_type: targetType,
+    target_campaign_id: targetCampaignId ?? null,
+    recipient_count: userIds.length,
+    title: trimmedTitle,
+  });
+
+  return String(broadcast.id);
+}
+
+export async function updateAdminBroadcast(
+  adminId: string,
+  broadcastId: string,
+  title: string,
+  message: string,
+): Promise<void> {
+  const supabase = db();
+  const trimmedTitle = title.trim();
+  const trimmedMessage = message.trim();
+  if (!trimmedTitle || !trimmedMessage) throw new Error('Title and message are required.');
+
+  const { data: existing, error: fetchErr } = await supabase
+    .from('broadcasts')
+    .select('id, title, message, announcement_message_id')
+    .eq('id', broadcastId)
+    .maybeSingle();
+
+  if (fetchErr) throw unwrapAdminError(new Error(fetchErr.message));
+  if (!existing) throw new Error('Broadcast not found.');
+
+  const { error: updateErr } = await supabase
+    .from('broadcasts')
+    .update({ title: trimmedTitle, message: trimmedMessage })
+    .eq('id', broadcastId);
+
+  if (updateErr) throw unwrapAdminError(new Error(updateErr.message));
+
+  const { error: notifErr } = await supabase
+    .from('notifications')
+    .update({ title: trimmedTitle, message: trimmedMessage })
+    .eq('broadcast_id', broadcastId);
+
+  if (notifErr) throw unwrapAdminError(new Error(notifErr.message));
+
+  const newContent = formatAnnouncementContent(trimmedTitle, trimmedMessage);
+  if (existing.announcement_message_id) {
+    await supabase
+      .from('messages')
+      .update({ content: newContent, updated_at: new Date().toISOString() })
+      .eq('id', existing.announcement_message_id);
+  } else {
+    const oldContent = formatAnnouncementContent(String(existing.title), String(existing.message));
+    const { data: annChannel } = await supabase
+      .from('chats')
+      .select('id')
+      .eq('type', 'channel')
+      .eq('channel_slug', 'announcements')
+      .maybeSingle();
+
+    if (annChannel?.id) {
+      const { data: msg } = await supabase
+        .from('messages')
+        .select('id')
+        .eq('chat_id', annChannel.id)
+        .eq('content', oldContent)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (msg?.id) {
+        await supabase
+          .from('messages')
+          .update({ content: newContent, updated_at: new Date().toISOString() })
+          .eq('id', msg.id);
+        await supabase
+          .from('broadcasts')
+          .update({ announcement_message_id: msg.id })
+          .eq('id', broadcastId);
+      }
+    }
+  }
+
+  await logAction(adminId, 'update_broadcast', 'broadcast', broadcastId, {
+    title: trimmedTitle,
+  });
+}
+
+export async function deleteAdminBroadcast(adminId: string, broadcastId: string): Promise<void> {
+  const supabase = db();
+
+  const { data: existing, error: fetchErr } = await supabase
+    .from('broadcasts')
+    .select('id, title, message, announcement_message_id')
+    .eq('id', broadcastId)
+    .maybeSingle();
+
+  if (fetchErr) throw unwrapAdminError(new Error(fetchErr.message));
+  if (!existing) throw new Error('Broadcast not found.');
+
+  await supabase.from('notifications').delete().eq('broadcast_id', broadcastId);
+
+  if (existing.announcement_message_id) {
+    await supabase.from('messages').delete().eq('id', existing.announcement_message_id);
+  } else {
+    const oldContent = formatAnnouncementContent(String(existing.title), String(existing.message));
+    const { data: annChannel } = await supabase
+      .from('chats')
+      .select('id')
+      .eq('type', 'channel')
+      .eq('channel_slug', 'announcements')
+      .maybeSingle();
+
+    if (annChannel?.id) {
+      await supabase
+        .from('messages')
+        .delete()
+        .eq('chat_id', annChannel.id)
+        .eq('content', oldContent);
+    }
+  }
+
+  const { error: delErr } = await supabase.from('broadcasts').delete().eq('id', broadcastId);
+  if (delErr) throw unwrapAdminError(new Error(delErr.message));
+
+  await logAction(adminId, 'delete_broadcast', 'broadcast', broadcastId, {
+    title: existing.title,
+  });
 }

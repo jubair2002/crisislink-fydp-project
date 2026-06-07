@@ -5,6 +5,12 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { Colors } from '../constants/colors';
 import { ToastHost } from '../components/ToastHost';
+import {
+  registerForPushNotifications,
+  setupNotificationNavigation,
+} from '../services/pushNotificationService';
+import { flushPendingMessages } from '../services/chatService';
+import { startNotificationListener } from '../services/notificationService';
 
 function SplashScreen() {
   return (
@@ -33,6 +39,18 @@ export default function RootLayout() {
   useEffect(() => {
     initialize();
   }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    registerForPushNotifications(user.id).catch(() => {});
+    flushPendingMessages(user.id).catch(() => {});
+    const unsubPush = setupNotificationNavigation();
+    const unsubNotif = startNotificationListener(user.id);
+    return () => {
+      unsubPush();
+      unsubNotif();
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     if (isLoading) return;

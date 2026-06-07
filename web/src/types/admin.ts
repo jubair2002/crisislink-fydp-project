@@ -286,3 +286,28 @@ export interface CampaignDetailPayload {
   donations: DonationAdminRow[];
   disaster: { id: string; disaster_type: string | null; location_label: string | null } | null;
 }
+
+export type BroadcastTargetType = 'all' | 'volunteers' | 'campaign';
+
+export interface BroadcastAdminRow {
+  id: string;
+  admin_id: string;
+  target_type: BroadcastTargetType;
+  target_campaign_id: string | null;
+  title: string;
+  message: string;
+  created_at: string;
+  recipient_count?: number;
+}
+
+export interface ChatMonitorRow {
+  id: string;
+  type: string;
+  name: string;
+  channel_slug: string | null;
+  description: string | null;
+  last_message_at: string | null;
+  last_message_preview: string | null;
+  member_count: number;
+  created_at: string;
+}

@@ -151,6 +151,9 @@ export async function joinCampaignAsVolunteer(
     { onConflict: 'campaign_id,volunteer_user_id' },
   );
   if (error) throw new Error(friendlyError(error.message));
+
+  const { ensureCampaignChatForVolunteers } = await import('./chatService');
+  void ensureCampaignChatForVolunteers(campaignId);
 }
 
 export async function fetchCampaignsNeedingVolunteers(limit = 10): Promise<Campaign[]> {

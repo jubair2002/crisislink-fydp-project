@@ -14,7 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 import { Colors } from '../../constants/colors';
-import { HeaderGlassCircleButton } from '../../components/HeaderGlassCircleButton';
+import { NotificationBellButton } from '../../components/NotificationBellButton';
+import { LatestBroadcastBanner } from '../../components/LatestBroadcastBanner';
 import { useAuthStore } from '../../store/authStore';
 import { useLocationStore } from '../../store/locationStore';
 import { useHomeStore } from '../../store/homeStore';
@@ -31,6 +32,7 @@ import {
   formatTimeAgo,
 } from './homeShared';
 import { ExpandableServiceGrid, type HomeServiceItem } from './ExpandableServiceGrid';
+import { openGeneralChannel } from '../chat/openGeneralChannel';
 
 const PAGE_PAD = 16;
 
@@ -44,13 +46,13 @@ const VOLUNTEER_SERVICES: HomeServiceItem[] = [
   { icon: 'map-outline', label: 'Live Map', onPress: () => router.push('/(main)/disasters') },
   { icon: 'cube-outline', label: 'Deliveries', onPress: () => router.push('/(main)/tasks') },
   { icon: 'heart-outline', label: 'Campaigns', onPress: () => router.push('/(main)/campaigns') },
-  { icon: 'people-outline', label: 'Community', onPress: () => router.push('/(main)/chat') },
+  { icon: 'people-outline', label: 'Community', onPress: () => void openGeneralChannel() },
   { icon: 'notifications-outline', label: 'Alerts', onPress: () => router.push('/(main)/notifications') },
   { icon: 'person-outline', label: 'Profile', onPress: () => router.push('/(main)/profile') },
   { icon: 'navigate-outline', label: 'Respond', onPress: () => router.push('/(main)/disasters') },
   { icon: 'document-text-outline', label: 'Reports', onPress: () => router.push('/(main)/disasters') },
   { icon: 'shield-checkmark-outline', label: 'Verify', onPress: () => router.push('/(main)/tasks') },
-  { icon: 'chatbubble-outline', label: 'Messages', onPress: () => router.push('/(main)/chat') },
+  { icon: 'chatbubble-outline', label: 'Messages', onPress: () => void openGeneralChannel() },
   { icon: 'settings-outline', label: 'Account', onPress: () => router.push('/(main)/profile') },
 ];
 
@@ -213,12 +215,7 @@ export default function VolunteerHomeScreen() {
                 Hi, {displayName}
               </Text>
             </View>
-            <HeaderGlassCircleButton
-              accessibilityLabel="Notifications"
-              onPress={() => router.push('/(main)/notifications')}
-            >
-              <Ionicons name="notifications-outline" size={21} color={Colors.textPrimary} />
-            </HeaderGlassCircleButton>
+            <NotificationBellButton />
           </View>
         </View>
 
@@ -261,6 +258,8 @@ export default function VolunteerHomeScreen() {
             <Text style={styles.locBannerText}>Turn on location for nearby missions.</Text>
           </View>
         ) : null}
+
+        <LatestBroadcastBanner />
 
         <View style={styles.section}>
           <SectionTitle title="Active task" />

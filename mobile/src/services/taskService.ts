@@ -299,6 +299,9 @@ async function assignNextVolunteer(taskId: string, radiusKm: number): Promise<bo
     .update({ status: 'assigned', updated_at: new Date().toISOString() })
     .eq('id', taskId);
 
+  const { ensureTaskChatForAssignment } = await import('./chatService');
+  void ensureTaskChatForAssignment(taskId);
+
   return true;
 }
 

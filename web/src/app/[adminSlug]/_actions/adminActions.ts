@@ -35,8 +35,13 @@ import {
   addDonationTrackingEntry,
   getCampaignFundSummary,
   bulkAllocateCampaignFunds,
+  getAdminBroadcasts,
+  getChatRoomsForMonitoring,
+  sendAdminBroadcast,
+  updateAdminBroadcast,
+  deleteAdminBroadcast,
 } from '@/lib/adminService';
-import type { DisasterFilters, TaskFilters, UserListFilters, CampaignFilters, DonationFilters } from '@/types/admin';
+import type { DisasterFilters, TaskFilters, UserListFilters, CampaignFilters, DonationFilters, BroadcastTargetType } from '@/types/admin';
 
 async function requireAdmin() {
   const user = await getCurrentUser();
@@ -330,4 +335,38 @@ export async function bulkAllocateCampaignFundsAction(
   const result = await bulkAllocateCampaignFunds(adminId, campaignId, input);
   revalidatePath(`${adminPrefix()}/donations`);
   return result;
+}
+
+export async function sendBroadcastAction(input: {
+  target_type: BroadcastTargetType;
+  title: string;
+  message: string;
+  target_campaign_id?: string | null;
+}) {
+  const adminId = await requireAdmin();
+  const id = await sendAdminBroadcast(
+    adminId,
+    input.target_type,
+    input.title,
+    input.message,
+    input.target_campaign_id ?? null,
+  );
+  revalidatePath(`${adminPrefix()}/chats`);
+  return id;
+}
+
+export async function updateBroadcastAction(input: {
+  id: string;
+  title: string;
+  message: string;
+}) {
+  const adminId = await requireAdmin();
+  await updateAdminBroadcast(adminId, input.id, input.title, input.message);
+  revalidatePath(`${adminPrefix()}/chats`);
+}
+
+export async function deleteBroadcastAction(broadcastId: string) {
+  const adminId = await requireAdmin();
+  await deleteAdminBroadcast(adminId, broadcastId);
+  revalidatePath(`${adminPrefix()}/chats`);
 }
