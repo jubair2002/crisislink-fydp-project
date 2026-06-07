@@ -9,17 +9,20 @@ import {
   Platform,
   Animated,
   ActivityIndicator,
-  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { resetPassword } from '../../services/authService';
 import { Input } from '../../components/Input';
 
 export default function ForgotPasswordScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -64,8 +67,6 @@ export default function ForgotPasswordScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -77,7 +78,7 @@ export default function ForgotPasswordScreen() {
         >
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
+              <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -99,7 +100,7 @@ export default function ForgotPasswordScreen() {
                 onPress={() => router.replace('/(auth)/login')}
                 activeOpacity={0.88}
               >
-                <LinearGradient colors={['#2563EB', '#1D4ED8']} style={styles.submitBtnGradient}>
+                <LinearGradient colors={[colors.primary, colors.primary]} style={styles.submitBtnGradient}>
                   <Text style={styles.submitBtnText}>Back to Sign In</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -144,9 +145,9 @@ export default function ForgotPasswordScreen() {
                   disabled={loading}
                   activeOpacity={0.88}
                 >
-                  <LinearGradient colors={['#2563EB', '#1D4ED8']} style={styles.submitBtnGradient}>
+                  <LinearGradient colors={[colors.primary, colors.primary]} style={styles.submitBtnGradient}>
                     {loading ? (
-                      <ActivityIndicator color="#FFFFFF" />
+                      <ActivityIndicator color={colors.onPrimary} />
                     ) : (
                       <Text style={styles.submitBtnText}>Send Reset Link</Text>
                     )}
@@ -161,8 +162,8 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
+const createStyles = (c: ThemeColors, _isDark: boolean) => ({
+  root: { flex: 1, backgroundColor: c.background },
   scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 32 },
 
   header: { flexDirection: 'row', alignItems: 'center', paddingTop: 8 },
@@ -172,48 +173,49 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: c.muted,
   },
 
   titleBlock: { marginTop: 32, marginBottom: 32, alignItems: 'flex-start' },
   title: {
-    fontSize: 30, fontWeight: '800', color: Colors.textPrimary,
+    fontSize: 30, fontWeight: '800', color: c.textPrimary,
     letterSpacing: -0.6, marginBottom: 8,
   },
-  subtitle: { fontSize: 15, color: Colors.textSecondary, lineHeight: 22 },
+  subtitle: { fontSize: 15, color: c.textSecondary, lineHeight: 22 },
 
   errorBanner: {
-    backgroundColor: '#FEF2F2', borderRadius: 12, padding: 14, marginBottom: 16,
-    borderWidth: 1, borderColor: '#FECACA',
+    backgroundColor: c.dangerSurface, borderRadius: 12, padding: 14, marginBottom: 16,
+    borderWidth: 1, borderColor: c.dangerSurfaceBorder,
   },
-  errorBannerText: { color: Colors.danger, fontSize: 13, fontWeight: '500' },
+  errorBannerText: { color: c.danger, fontSize: 13, fontWeight: '500' },
 
   submitBtn: {
     borderRadius: 16, overflow: 'hidden',
-    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 8 },
+    shadowColor: c.primary, shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25, shadowRadius: 16, elevation: 8,
   },
   submitBtnDisabled: { opacity: 0.65 },
   submitBtnGradient: {
     alignItems: 'center', justifyContent: 'center', paddingVertical: 17,
   },
-  submitBtnText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.3 },
+  submitBtnText: { fontSize: 16, fontWeight: '700', color: c.onPrimary, letterSpacing: 0.3 },
 
   successWrap: { marginTop: 40, alignItems: 'center' },
   successTitle: {
-    fontSize: 26, fontWeight: '800', color: Colors.textPrimary,
+    fontSize: 26, fontWeight: '800', color: c.textPrimary,
     marginBottom: 12, letterSpacing: -0.4,
   },
   successBody: {
-    fontSize: 15, color: Colors.textSecondary,
+    fontSize: 15, color: c.textSecondary,
     textAlign: 'center', lineHeight: 22, marginBottom: 20,
   },
-  successEmail: { color: Colors.primary, fontWeight: '700' },
+  successEmail: { color: c.primary, fontWeight: '700' },
   hintBox: {
-    backgroundColor: '#EFF6FF', padding: 14, borderRadius: 12,
+    backgroundColor: c.primarySurface, padding: 14, borderRadius: 12,
     marginBottom: 28, alignSelf: 'stretch',
+    borderWidth: 1, borderColor: c.primarySurfaceBorder,
   },
-  hintText: { fontSize: 13, color: Colors.textSecondary, lineHeight: 18, textAlign: 'center' },
+  hintText: { fontSize: 13, color: c.textSecondary, lineHeight: 18, textAlign: 'center' },
   tryAgainBtn: { marginTop: 16, paddingVertical: 8 },
-  tryAgainText: { color: Colors.primary, fontWeight: '600', fontSize: 14 },
+  tryAgainText: { color: c.primary, fontWeight: '600', fontSize: 14 },
 });

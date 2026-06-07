@@ -10,12 +10,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { MAP_DARK_STYLE, type ThemeColors } from '../../constants/themes';
 import { useAuthStore } from '../../store/authStore';
 import { getVolunteerProfile } from '../../services/profileService';
 import { getDisastersNearby } from '../../services/disasterService';
 import { getCurrentLocation, startTracking, stopTracking } from '../../services/locationService';
 import IncomingTaskPopup from './IncomingTaskPopup';
+import VolunteerCampaignIssuesScreen from '../report/VolunteerCampaignIssuesScreen';
 import {
   acceptTask,
   declineTask,
@@ -38,7 +41,92 @@ type ActivePopupTask = {
   distanceKm: number | null;
 };
 
+const createStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.background },
+    scroll: { padding: 16, gap: 12, paddingBottom: 36 },
+    header: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    title: { flex: 1, fontSize: 23, fontWeight: '800', color: c.textPrimary },
+    iconBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: c.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    loading: { marginTop: 40, alignItems: 'center' },
+    card: {
+      backgroundColor: c.card,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: 12,
+      gap: 10,
+    },
+    rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    cardTitle: { fontSize: 15, fontWeight: '800', color: c.textPrimary },
+    cardSub: { color: c.textSecondary, fontSize: 12 },
+    toggleRow: { flexDirection: 'row', gap: 10 },
+    toggle: {
+      flex: 1,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.card,
+      alignItems: 'center',
+      paddingVertical: 10,
+    },
+    toggleOn: { backgroundColor: c.primarySurface, borderColor: c.primary },
+    toggleText: { color: c.textSecondary, fontWeight: '700' },
+    toggleTextOn: { color: c.primary },
+    statsRow: { flexDirection: 'row', gap: 10 },
+    statCard: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 14,
+      backgroundColor: c.card,
+      paddingVertical: 12,
+      alignItems: 'center',
+      gap: 2,
+    },
+    statValue: { fontSize: 18, fontWeight: '800', color: c.textPrimary },
+    statLabel: { fontSize: 12, color: c.textSecondary },
+    mapWrap: { height: 170, borderRadius: 12, overflow: 'hidden' },
+    map: { flex: 1 },
+    actionBtn: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: c.primarySurfaceBorder,
+      backgroundColor: c.primarySurface,
+      paddingVertical: 10,
+      borderRadius: 10,
+      alignItems: 'center',
+    },
+    actionBtnDisabled: {
+      backgroundColor: c.muted,
+      borderColor: c.border,
+    },
+    actionText: { color: c.primary, fontWeight: '700' },
+    tabRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+    tab: {
+      flex: 1,
+      paddingVertical: 10,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.card,
+      alignItems: 'center',
+    },
+    tabOn: { backgroundColor: c.primarySurface, borderColor: c.primary },
+    tabText: { color: c.textSecondary, fontWeight: '700', fontSize: 13 },
+    tabTextOn: { color: c.primary },
+  });
+
 export default function VolunteerDashboardScreen() {
+  const { colors, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const userId = useAuthStore((s) => s.user?.id ?? '');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -52,6 +140,7 @@ export default function VolunteerDashboardScreen() {
   const [popupTask, setPopupTask] = useState<ActivePopupTask | null>(null);
   const [taskCache, setTaskCache] = useState<Record<string, TaskRow>>({});
   const [selectedView, setSelectedView] = useState<'dashboard' | 'list' | 'detail'>('dashboard');
+  const [dashboardTab, setDashboardTab] = useState<'overview' | 'issues'>('overview');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const isLoadingRef = useRef(false);
 
@@ -106,7 +195,6 @@ export default function VolunteerDashboardScreen() {
         setWorkStatus('available');
       }
 
-      // Do not block dashboard rendering on location permission or GPS resolution.
       void (async () => {
         try {
           const loc = await getCurrentLocation();
@@ -256,13 +344,34 @@ export default function VolunteerDashboardScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Volunteer Dashboard</Text>
           <TouchableOpacity style={styles.iconBtn} onPress={() => void load()}>
-            <Ionicons name="refresh" size={18} color={Colors.primary} />
+            <Ionicons name="refresh" size={18} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
-        {loading ? (
+        <View style={styles.tabRow}>
+          <TouchableOpacity
+            style={[styles.tab, dashboardTab === 'overview' && styles.tabOn]}
+            onPress={() => setDashboardTab('overview')}
+          >
+            <Text style={[styles.tabText, dashboardTab === 'overview' && styles.tabTextOn]}>
+              Overview
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, dashboardTab === 'issues' && styles.tabOn]}
+            onPress={() => setDashboardTab('issues')}
+          >
+            <Text style={[styles.tabText, dashboardTab === 'issues' && styles.tabTextOn]}>
+              Campaign Issues
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {dashboardTab === 'issues' ? (
+          <VolunteerCampaignIssuesScreen embedded />
+        ) : loading ? (
           <View style={styles.loading}>
-            <ActivityIndicator color={Colors.primary} />
+            <ActivityIndicator color={colors.primary} />
           </View>
         ) : (
           <>
@@ -310,17 +419,17 @@ export default function VolunteerDashboardScreen() {
 
             <View style={styles.statsRow}>
               <View style={styles.statCard}>
-                <Ionicons name="clipboard-outline" size={18} color={Colors.primary} />
+                <Ionicons name="clipboard-outline" size={18} color={colors.primary} />
                 <Text style={styles.statValue}>{activeTaskCount}</Text>
                 <Text style={styles.statLabel}>Active tasks</Text>
               </View>
               <View style={styles.statCard}>
-                <Ionicons name="checkmark-done-outline" size={18} color={Colors.success} />
+                <Ionicons name="checkmark-done-outline" size={18} color={colors.success} />
                 <Text style={styles.statValue}>{stats.completed}</Text>
                 <Text style={styles.statLabel}>Completed</Text>
               </View>
               <View style={styles.statCard}>
-                <Ionicons name="star-outline" size={18} color="#D97706" />
+                <Ionicons name="star-outline" size={18} color={colors.warning} />
                 <Text style={styles.statValue}>{stats.rating.toFixed(1)}</Text>
                 <Text style={styles.statLabel}>Rating</Text>
               </View>
@@ -334,6 +443,7 @@ export default function VolunteerDashboardScreen() {
               <View style={styles.mapWrap}>
                 <MapView
                   style={styles.map}
+                  customMapStyle={isDark ? MAP_DARK_STYLE : undefined}
                   initialRegion={{
                     latitude: nearby[0]?.latitude ?? 23.8103,
                     longitude: nearby[0]?.longitude ?? 90.4125,
@@ -378,72 +488,3 @@ export default function VolunteerDashboardScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
-  scroll: { padding: 16, gap: 12, paddingBottom: 36 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  title: { flex: 1, fontSize: 23, fontWeight: '800', color: Colors.textPrimary },
-  iconBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loading: { marginTop: 40, alignItems: 'center' },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 12,
-    gap: 10,
-  },
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: Colors.textPrimary },
-  cardSub: { color: Colors.textSecondary, fontSize: 12 },
-  toggleRow: { flexDirection: 'row', gap: 10 },
-  toggle: {
-    flex: 1,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  toggleOn: { backgroundColor: '#EFF6FF', borderColor: Colors.primary },
-  toggleText: { color: Colors.textSecondary, fontWeight: '700' },
-  toggleTextOn: { color: Colors.primary },
-  statsRow: { flexDirection: 'row', gap: 10 },
-  statCard: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 12,
-    alignItems: 'center',
-    gap: 2,
-  },
-  statValue: { fontSize: 18, fontWeight: '800', color: Colors.textPrimary },
-  statLabel: { fontSize: 12, color: Colors.textSecondary },
-  mapWrap: { height: 170, borderRadius: 12, overflow: 'hidden' },
-  map: { flex: 1 },
-  actionBtn: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    backgroundColor: '#EFF6FF',
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  actionBtnDisabled: {
-    backgroundColor: '#E2E8F0',
-    borderColor: '#CBD5E1',
-  },
-  actionText: { color: Colors.primary, fontWeight: '700' },
-});

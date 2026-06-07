@@ -29,7 +29,7 @@ export const ADMIN_NAV: NavItem[] = [
   { path: '/campaigns', label: 'Campaign Management', icon: Megaphone },
   { path: '/donations', label: 'Donation Tracking', icon: HandCoins },
   { path: '/resources', label: 'Resource Management', icon: PackageSearch },
-  { path: '/reports', label: 'Reports', icon: FileText },
+  { path: '/reports', label: 'Issue Management', icon: FileText },
   { path: '/chats', label: 'Chat Monitoring', icon: MessageSquare },
   { path: '/logs', label: 'System Logs', icon: ScrollText },
 ];

@@ -3,10 +3,8 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  StatusBar,
   Alert,
   TextInput,
   KeyboardAvoidingView,
@@ -18,9 +16,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { Colors } from '../../constants/colors';
+import type { ThemeColors } from '../../constants/themes';
 import { SEVERITY_LABELS } from '../../constants/disasterUi';
-import { disasterStyles } from './disasterStyles';
+import { useDisasterStyles } from './disasterStyles';
 import {
   getDisasterById,
   updateDisasterSeverity,
@@ -31,6 +29,8 @@ import { useAuthStore } from '../../store/authStore';
 import { getVolunteerProfile } from '../../services/profileService';
 import type { DisasterRow, DisasterSeverity } from '../../types/disaster';
 import { createTask } from '../../services/taskService';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
 
 const SEVERITIES: DisasterSeverity[] = ['low', 'medium', 'high', 'critical'];
 const TASK_TYPES = [
@@ -40,7 +40,74 @@ const TASK_TYPES = [
   { key: 'logistics_support', label: 'Logistics Support' },
 ];
 
+const createStyles = (c: ThemeColors) => ({
+  center: { flex: 1, alignItems: 'center' as const, justifyContent: 'center' as const },
+
+  segment: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    gap: 8,
+    marginBottom: 12,
+  },
+  segChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: c.inputBorder,
+    backgroundColor: c.inputBg,
+  },
+  segChipOn: { borderColor: c.primary, backgroundColor: c.primarySurface },
+  segLabel: { fontSize: 12, fontWeight: '700' as const, color: c.textSecondary },
+  segLabelOn: { color: c.primary },
+
+  notesInput: {
+    borderWidth: 1,
+    borderColor: c.inputBorder,
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: c.inputBg,
+    marginBottom: 12,
+    minHeight: 96,
+    textAlignVertical: 'top' as const,
+    fontSize: 15,
+    color: c.textPrimary,
+  },
+
+  progressOuter: {
+    height: 8,
+    borderRadius: 6,
+    backgroundColor: c.skeleton,
+    overflow: 'hidden' as const,
+    marginBottom: 14,
+    marginTop: 8,
+  },
+  progressInner: {
+    height: '100%' as const,
+    backgroundColor: c.primary,
+    borderRadius: 6,
+  },
+  confirmBtn: {
+    marginTop: 8,
+  },
+
+  rejectBtn: {
+    marginTop: 12,
+    alignItems: 'center' as const,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: c.dangerSurfaceBorder,
+    backgroundColor: c.dangerSurface,
+  },
+  rejectText: { fontSize: 15, fontWeight: '700' as const, color: c.danger },
+});
+
 export default function VolunteerVerificationScreen() {
+  const disasterStyles = useDisasterStyles();
+  const styles = useThemedStyles(createStyles);
+  const { colors, primaryGradient } = useTheme();
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = useAuthStore((s) => s.user);
   const profile = useAuthStore((s) => s.profile);
@@ -182,18 +249,16 @@ export default function VolunteerVerificationScreen() {
   if (loading || !disaster) {
     return (
       <SafeAreaView style={[disasterStyles.screenBg, styles.center]} edges={['top']}>
-        <ActivityIndicator color={Colors.primary} />
+        <ActivityIndicator color={colors.primary} />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={disasterStyles.screenBgWhite} edges={['top']}>
-      <StatusBar barStyle="dark-content" />
-
       <View style={disasterStyles.headerRow}>
         <TouchableOpacity onPress={() => router.back()} style={disasterStyles.backBtn}>
-          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
+          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={disasterStyles.headerTitle}>Verify disaster</Text>
       </View>
@@ -244,7 +309,7 @@ export default function VolunteerVerificationScreen() {
             onPress={() => void saveSeverityOnly()}
             disabled={busy}
           >
-            <Ionicons name="save-outline" size={18} color={Colors.primary} />
+            <Ionicons name="save-outline" size={18} color={colors.primary} />
             <Text style={disasterStyles.outlineBtnText}>Update severity only</Text>
           </TouchableOpacity>
 
@@ -252,7 +317,7 @@ export default function VolunteerVerificationScreen() {
           <TextInput
             style={styles.notesInput}
             placeholder="Add verification notes..."
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.textSecondary}
             multiline
             value={notes}
             onChangeText={setNotes}
@@ -264,7 +329,7 @@ export default function VolunteerVerificationScreen() {
             onPress={() => void pickVerificationMedia()}
             disabled={busy}
           >
-            <Ionicons name="cloud-upload-outline" size={18} color={Colors.primary} />
+            <Ionicons name="cloud-upload-outline" size={18} color={colors.primary} />
             <Text style={disasterStyles.outlineBtnText}>Upload proof</Text>
           </TouchableOpacity>
 
@@ -279,9 +344,9 @@ export default function VolunteerVerificationScreen() {
             disabled={busy}
             onPress={() => void runVerify('verified')}
           >
-            <LinearGradient colors={['#2563EB', '#1D4ED8']} style={disasterStyles.primaryBtnGradientWrap}>
+            <LinearGradient colors={primaryGradient} style={disasterStyles.primaryBtnGradientWrap}>
               {busy ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={colors.onPrimary} />
               ) : (
                 <Text style={disasterStyles.primaryBtnText}>Confirm disaster</Text>
               )}
@@ -300,66 +365,3 @@ export default function VolunteerVerificationScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
-  segment: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
-  },
-  segChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
-  },
-  segChipOn: { borderColor: Colors.primary, backgroundColor: '#EFF6FF' },
-  segLabel: { fontSize: 12, fontWeight: '700', color: Colors.textSecondary },
-  segLabelOn: { color: Colors.primary },
-
-  notesInput: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    padding: 12,
-    backgroundColor: '#F8FAFC',
-    marginBottom: 12,
-    minHeight: 96,
-    textAlignVertical: 'top',
-    fontSize: 15,
-    color: Colors.textPrimary,
-  },
-
-  progressOuter: {
-    height: 8,
-    borderRadius: 6,
-    backgroundColor: '#E2E8F0',
-    overflow: 'hidden',
-    marginBottom: 14,
-    marginTop: 8,
-  },
-  progressInner: {
-    height: '100%',
-    backgroundColor: Colors.primary,
-    borderRadius: 6,
-  },
-  confirmBtn: {
-    marginTop: 8,
-  },
-
-  rejectBtn: {
-    marginTop: 12,
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    backgroundColor: '#FEF2F2',
-  },
-  rejectText: { fontSize: 15, fontWeight: '700', color: Colors.danger },
-});

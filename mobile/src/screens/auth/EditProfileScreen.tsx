@@ -8,7 +8,6 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
-  StatusBar,
   Image,
   Alert,
 } from 'react-native';
@@ -17,7 +16,9 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { Input } from '../../components/Input';
 import { useAuthStore } from '../../store/authStore';
 import {
@@ -36,6 +37,8 @@ type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 const DEBOUNCE_MS = 800;
 
 export default function EditProfileScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { user, profile, setProfile } = useAuthStore();
 
   const [form, setForm] = useState<Record<EditableField, string>>({
@@ -73,7 +76,6 @@ export default function EditProfileScreen() {
     lastServerForm.current = next;
   }, [profile?.user_id]);
 
-  // Debounced auto-save whenever form changes
   useEffect(() => {
     if (!user) return;
     if (!lastServerForm.current) return;
@@ -85,7 +87,6 @@ export default function EditProfileScreen() {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
     debounceTimer.current = setTimeout(async () => {
-      // Validate before saving
       const errs: Partial<Record<EditableField, string>> = {};
       if (!form.name.trim()) errs.name = 'Name is required';
       if (form.phone && !/^[+\d][\d\s\-()]{6,}$/.test(form.phone.trim()))
@@ -174,14 +175,12 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
       <View style={styles.topBar}>
         <TouchableOpacity
           onPress={() => router.replace('/(main)/profile')}
           style={styles.backBtn}
         >
-          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
+          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.topTitle}>Edit profile</Text>
         <SaveBadge state={saveState} />
@@ -198,7 +197,7 @@ export default function EditProfileScreen() {
         >
           {errorMsg !== '' && saveState === 'error' && (
             <View style={styles.errorBanner}>
-              <Ionicons name="alert-circle-outline" size={18} color={Colors.danger} />
+              <Ionicons name="alert-circle-outline" size={18} color={colors.danger} />
               <Text style={styles.errorBannerText}>{errorMsg}</Text>
             </View>
           )}
@@ -208,16 +207,16 @@ export default function EditProfileScreen() {
               {photoUri ? (
                 <Image source={{ uri: photoUri }} style={styles.photoImage} />
               ) : (
-                <Ionicons name="person" size={42} color={Colors.primary} />
+                <Ionicons name="person" size={42} color={colors.primary} />
               )}
               {photoUploading && (
                 <View style={styles.photoOverlay}>
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ActivityIndicator color={colors.onPrimary} />
                 </View>
               )}
             </TouchableOpacity>
             <TouchableOpacity onPress={pickPhoto} style={styles.photoBtn} activeOpacity={0.85}>
-              <Ionicons name="camera-outline" size={14} color={Colors.primary} />
+              <Ionicons name="camera-outline" size={14} color={colors.primary} />
               <Text style={styles.photoBtnText}>{photoUri ? 'Change photo' : 'Add photo'}</Text>
             </TouchableOpacity>
             <Text style={styles.photoEmail}>{profile?.email}</Text>
@@ -276,33 +275,36 @@ export default function EditProfileScreen() {
 }
 
 function SaveBadge({ state }: { state: SaveState }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   if (state === 'idle') return <View style={{ width: 90 }} />;
   if (state === 'saving') {
     return (
-      <View style={[styles.saveBadge, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
-        <ActivityIndicator size="small" color={Colors.primary} />
-        <Text style={[styles.saveBadgeText, { color: Colors.primary }]}>Saving…</Text>
+      <View style={[styles.saveBadge, { backgroundColor: colors.primarySurface, borderColor: colors.primarySurfaceBorder }]}>
+        <ActivityIndicator size="small" color={colors.primary} />
+        <Text style={[styles.saveBadgeText, { color: colors.primary }]}>Saving…</Text>
       </View>
     );
   }
   if (state === 'saved') {
     return (
-      <View style={[styles.saveBadge, { backgroundColor: '#ECFDF5', borderColor: '#A7F3D0' }]}>
-        <Ionicons name="checkmark-circle" size={14} color={Colors.success} />
-        <Text style={[styles.saveBadgeText, { color: Colors.success }]}>Saved</Text>
+      <View style={[styles.saveBadge, { backgroundColor: colors.successSurface, borderColor: colors.successSurfaceBorder }]}>
+        <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+        <Text style={[styles.saveBadgeText, { color: colors.success }]}>Saved</Text>
       </View>
     );
   }
   return (
-    <View style={[styles.saveBadge, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-      <Ionicons name="close-circle" size={14} color={Colors.danger} />
-      <Text style={[styles.saveBadgeText, { color: Colors.danger }]}>Error</Text>
+    <View style={[styles.saveBadge, { backgroundColor: colors.dangerSurface, borderColor: colors.dangerSurfaceBorder }]}>
+      <Ionicons name="close-circle" size={14} color={colors.danger} />
+      <Text style={[styles.saveBadgeText, { color: colors.danger }]}>Error</Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
+const createStyles = (c: ThemeColors, _isDark: boolean) => ({
+  root: { flex: 1, backgroundColor: c.background },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -310,7 +312,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: c.border,
   },
   backBtn: {
     width: 42,
@@ -318,9 +320,9 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: c.muted,
   },
-  topTitle: { fontSize: 16, fontWeight: '800', color: Colors.textPrimary },
+  topTitle: { fontSize: 16, fontWeight: '800', color: c.textPrimary },
 
   saveBadge: {
     flexDirection: 'row',
@@ -341,31 +343,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: c.dangerSurface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: c.dangerSurfaceBorder,
   },
-  errorBannerText: { color: Colors.danger, fontSize: 13, fontWeight: '500', flex: 1 },
+  errorBannerText: { color: c.danger, fontSize: 13, fontWeight: '500', flex: 1 },
 
   photoBlock: { alignItems: 'center', marginBottom: 24, gap: 8 },
   photoCircle: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: c.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#BFDBFE',
+    borderColor: c.primarySurfaceBorder,
     overflow: 'hidden',
   },
   photoImage: { width: '100%', height: '100%' },
   photoOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    backgroundColor: c.overlay,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -376,17 +378,17 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 999,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: c.primarySurface,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: c.primarySurfaceBorder,
   },
-  photoBtnText: { color: Colors.primary, fontSize: 12, fontWeight: '700' },
-  photoEmail: { fontSize: 13, color: Colors.textSecondary, marginTop: 4 },
+  photoBtnText: { color: c.primary, fontSize: 12, fontWeight: '700' },
+  photoEmail: { fontSize: 13, color: c.textSecondary, marginTop: 4 },
 
   autosaveNote: {
     marginTop: 8,
     textAlign: 'center',
     fontSize: 12,
-    color: '#94A3B8',
+    color: c.chevron,
   },
 });

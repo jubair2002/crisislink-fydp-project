@@ -40,8 +40,21 @@ import {
   sendAdminBroadcast,
   updateAdminBroadcast,
   deleteAdminBroadcast,
+  getReports,
+  getReportDetailPayload,
+  updateReportStatusByAdmin,
+  addReportResponseByAdmin,
 } from '@/lib/adminService';
-import type { DisasterFilters, TaskFilters, UserListFilters, CampaignFilters, DonationFilters, BroadcastTargetType } from '@/types/admin';
+import type {
+  DisasterFilters,
+  TaskFilters,
+  UserListFilters,
+  CampaignFilters,
+  DonationFilters,
+  BroadcastTargetType,
+  ReportFilters,
+  ReportStatus,
+} from '@/types/admin';
 
 async function requireAdmin() {
   const user = await getCurrentUser();
@@ -369,4 +382,22 @@ export async function deleteBroadcastAction(broadcastId: string) {
   const adminId = await requireAdmin();
   await deleteAdminBroadcast(adminId, broadcastId);
   revalidatePath(`${adminPrefix()}/chats`);
+}
+
+export async function updateReportStatusAction(
+  reportId: string,
+  status: ReportStatus,
+  resolutionMessage?: string | null,
+) {
+  const adminId = await requireAdmin();
+  await updateReportStatusByAdmin(adminId, reportId, status, resolutionMessage);
+  revalidatePath(`${adminPrefix()}/reports`);
+  revalidatePath(`${adminPrefix()}/reports/${reportId}`);
+}
+
+export async function addReportResponseAction(reportId: string, message: string) {
+  const adminId = await requireAdmin();
+  await addReportResponseByAdmin(adminId, reportId, message);
+  revalidatePath(`${adminPrefix()}/reports/${reportId}`);
+  revalidatePath(`${adminPrefix()}/reports`);
 }

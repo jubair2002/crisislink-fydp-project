@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import {
   HandCoins,
   HeartHandshake,
@@ -9,6 +10,7 @@ import {
 import MetricCard from './_components/MetricCard';
 import DashboardCharts from './_components/DashboardCharts';
 import { fetchDashboardData } from '@/lib/dashboardMetrics';
+import { buildNavHref } from '@/lib/nav';
 
 export const metadata = { title: 'Dashboard · CrisisLink Admin' };
 
@@ -23,7 +25,12 @@ const currencyFmt = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 0,
 });
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  params,
+}: {
+  params: Promise<{ adminSlug: string }>;
+}) {
+  const { adminSlug } = await params;
   const { summary, signupsLast30Days, disastersByTypeThisMonth, volunteersBySkill } =
     await fetchDashboardData();
 
@@ -77,13 +84,15 @@ export default async function DashboardPage() {
           icon={HandCoins}
           tone="success"
         />
-        <MetricCard
-          label="Pending Reports"
-          value={numberFmt.format(summary.pendingReports)}
-          hint="Awaiting triage"
-          icon={FileText}
-          tone="warning"
-        />
+        <Link href={`${buildNavHref(adminSlug, '/reports')}?status=submitted`} className="block hover:opacity-95">
+          <MetricCard
+            label="Open Issues"
+            value={numberFmt.format(summary.pendingReports)}
+            hint="Submitted or in review"
+            icon={FileText}
+            tone="warning"
+          />
+        </Link>
       </section>
 
       <DashboardCharts

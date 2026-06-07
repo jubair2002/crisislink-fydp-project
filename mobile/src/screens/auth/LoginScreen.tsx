@@ -9,18 +9,21 @@ import {
   Platform,
   Animated,
   ActivityIndicator,
-  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { signInWithEmail, getProfile } from '../../services/authService';
 import { useAuthStore } from '../../store/authStore';
 import { Input } from '../../components/Input';
 
 export default function LoginScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -70,8 +73,6 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -83,7 +84,7 @@ export default function LoginScreen() {
         >
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
+              <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -131,9 +132,9 @@ export default function LoginScreen() {
               disabled={loading}
               activeOpacity={0.88}
             >
-              <LinearGradient colors={['#2563EB', '#1D4ED8']} style={styles.submitBtnGradient}>
+              <LinearGradient colors={[colors.primary, colors.primary]} style={styles.submitBtnGradient}>
                 {loading ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ActivityIndicator color={colors.onPrimary} />
                 ) : (
                   <Text style={styles.submitBtnText}>Sign In</Text>
                 )}
@@ -152,8 +153,8 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
+const createStyles = (c: ThemeColors, _isDark: boolean) => ({
+  root: { flex: 1, backgroundColor: c.background },
   scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 32 },
 
   header: { flexDirection: 'row', alignItems: 'center', paddingTop: 8 },
@@ -163,39 +164,39 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: c.muted,
   },
 
   titleBlock: { marginTop: 32, marginBottom: 32, alignItems: 'flex-start' },
   title: {
-    fontSize: 32, fontWeight: '800', color: Colors.textPrimary,
+    fontSize: 32, fontWeight: '800', color: c.textPrimary,
     letterSpacing: -0.6, marginBottom: 6,
   },
-  subtitle: { fontSize: 15, color: Colors.textSecondary, lineHeight: 22 },
+  subtitle: { fontSize: 15, color: c.textSecondary, lineHeight: 22 },
 
   form: {},
 
   errorBanner: {
-    backgroundColor: '#FEF2F2', borderRadius: 12, padding: 14, marginBottom: 16,
-    borderWidth: 1, borderColor: '#FECACA',
+    backgroundColor: c.dangerSurface, borderRadius: 12, padding: 14, marginBottom: 16,
+    borderWidth: 1, borderColor: c.dangerSurfaceBorder,
   },
-  errorBannerText: { color: Colors.danger, fontSize: 13, fontWeight: '500' },
+  errorBannerText: { color: c.danger, fontSize: 13, fontWeight: '500' },
 
   forgotLink: { alignSelf: 'flex-end', marginTop: 4, marginBottom: 28, paddingVertical: 4 },
-  forgotText: { color: Colors.primary, fontSize: 13, fontWeight: '700' },
+  forgotText: { color: c.primary, fontSize: 13, fontWeight: '700' },
 
   submitBtn: {
     borderRadius: 16, overflow: 'hidden',
-    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 8 },
+    shadowColor: c.primary, shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25, shadowRadius: 16, elevation: 8,
   },
   submitBtnDisabled: { opacity: 0.65 },
   submitBtnGradient: {
     alignItems: 'center', justifyContent: 'center', paddingVertical: 17,
   },
-  submitBtnText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.3 },
+  submitBtnText: { fontSize: 16, fontWeight: '700', color: c.onPrimary, letterSpacing: 0.3 },
 
   bottomLink: { alignSelf: 'center', marginTop: 32, paddingVertical: 8 },
-  bottomLinkText: { fontSize: 14, color: Colors.textSecondary },
-  bottomLinkBold: { color: Colors.primary, fontWeight: '700' },
+  bottomLinkText: { fontSize: 14, color: c.textSecondary },
+  bottomLinkBold: { color: c.primary, fontWeight: '700' },
 });

@@ -9,7 +9,6 @@ import {
   Platform,
   Animated,
   ActivityIndicator,
-  StatusBar,
   Image,
   Alert,
   Switch,
@@ -20,7 +19,9 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { Input } from '../../components/Input';
 import { useAuthStore } from '../../store/authStore';
 import { useProfileStore, type VolunteerDraft } from '../../store/profileStore';
@@ -53,6 +54,8 @@ const STEP_TITLES: Record<number, { title: string; subtitle: string }> = {
 type FieldErrors = Record<string, string>;
 
 export default function VolunteerProfileForm() {
+  const { colors, primaryGradient } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { user, profile, setProfile: setAuthProfile } = useAuthStore();
   const { volunteerDraft, updateVolunteerField, resetVolunteerDraft } = useProfileStore();
 
@@ -279,11 +282,10 @@ export default function VolunteerProfileForm() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <View style={styles.topBar}>
         <TouchableOpacity onPress={goBack} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
+          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.stepCount}>
           Step {step} of {TOTAL_STEPS}
@@ -312,7 +314,7 @@ export default function VolunteerProfileForm() {
           <Animated.View style={[styles.form, { transform: [{ translateX: shakeAnim }] }]}>
             {error !== '' && (
               <View style={styles.errorBanner}>
-                <Ionicons name="alert-circle-outline" size={18} color={Colors.danger} />
+                <Ionicons name="alert-circle-outline" size={18} color={colors.danger} />
                 <Text style={styles.errorBannerText}>{error}</Text>
               </View>
             )}
@@ -372,7 +374,7 @@ export default function VolunteerProfileForm() {
 
         <View style={styles.footer}>
           <TouchableOpacity onPress={goBack} style={styles.backFooterBtn} activeOpacity={0.85}>
-            <Ionicons name="arrow-back" size={16} color={Colors.textPrimary} />
+            <Ionicons name="arrow-back" size={16} color={colors.textPrimary} />
             <Text style={styles.backFooterText}>Back</Text>
           </TouchableOpacity>
 
@@ -382,9 +384,9 @@ export default function VolunteerProfileForm() {
               onPress={goNext}
               activeOpacity={0.88}
             >
-              <LinearGradient colors={['#2563EB', '#1D4ED8']} style={styles.nextBtnGradient}>
+              <LinearGradient colors={primaryGradient} style={styles.nextBtnGradient}>
                 <Text style={styles.nextBtnText}>Next</Text>
-                <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
+                <Ionicons name="arrow-forward" size={16} color={colors.onPrimary} />
               </LinearGradient>
             </TouchableOpacity>
           ) : (
@@ -394,13 +396,13 @@ export default function VolunteerProfileForm() {
               disabled={submitting}
               activeOpacity={0.88}
             >
-              <LinearGradient colors={['#2563EB', '#1D4ED8']} style={styles.nextBtnGradient}>
+              <LinearGradient colors={primaryGradient} style={styles.nextBtnGradient}>
                 {submitting ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ActivityIndicator color={colors.onPrimary} />
                 ) : (
                   <>
                     <Text style={styles.nextBtnText}>Submit Application</Text>
-                    <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                    <Ionicons name="checkmark" size={16} color={colors.onPrimary} />
                   </>
                 )}
               </LinearGradient>
@@ -428,6 +430,8 @@ function Step1Personal({
   onPickPhoto: () => void;
   photoUploading: boolean;
 }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const photoUri = draft.profile_photo_local ?? draft.profile_photo_url;
   return (
     <View>
@@ -437,17 +441,17 @@ function Step1Personal({
           {photoUri ? (
             <Image source={{ uri: photoUri }} style={styles.photoImage} />
           ) : (
-            <Ionicons name="camera-outline" size={28} color={Colors.primary} />
+            <Ionicons name="camera-outline" size={28} color={colors.primary} />
           )}
           {photoUploading && (
             <View style={styles.photoOverlay}>
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={colors.onPrimary} />
             </View>
           )}
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <TouchableOpacity onPress={onPickPhoto} style={styles.photoBtn} activeOpacity={0.85}>
-            <Ionicons name="image-outline" size={16} color={Colors.primary} />
+            <Ionicons name="image-outline" size={16} color={colors.primary} />
             <Text style={styles.photoBtnText}>{photoUri ? 'Change photo' : 'Choose photo'}</Text>
           </TouchableOpacity>
           <Text style={styles.photoHint}>JPG or PNG, up to 5 MB.</Text>
@@ -511,6 +515,8 @@ function Step2Skills({
   error?: string;
   onChange: (next: VolunteerSkill[]) => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const toggle = (s: VolunteerSkill) => {
     if (selected.includes(s)) onChange(selected.filter((x) => x !== s));
     else onChange([...selected, s]);
@@ -531,14 +537,14 @@ function Step2Skills({
               style={[styles.checkRow, active && styles.checkRowActive]}
             >
               <View style={[styles.checkBox, active && styles.checkBoxActive]}>
-                {active && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+                {active && <Ionicons name="checkmark" size={14} color={colors.onPrimary} />}
               </View>
               <Ionicons
                 name={s.icon as keyof typeof Ionicons.glyphMap}
                 size={20}
-                color={active ? Colors.primary : '#64748B'}
+                color={active ? colors.primary : colors.iconMuted}
               />
-              <Text style={[styles.checkLabel, active && { color: Colors.primary }]}>
+              <Text style={[styles.checkLabel, active && { color: colors.primary }]}>
                 {s.label}
               </Text>
             </TouchableOpacity>
@@ -562,6 +568,8 @@ function Step3Availability({
   fieldErrors: FieldErrors;
   onChange: <K extends keyof VolunteerDraft>(key: K, value: VolunteerDraft[K]) => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const toggleType = (t: DisasterType) => {
     if (draft.preferred_disaster_types.includes(t))
       onChange(
@@ -588,7 +596,7 @@ function Step3Availability({
                 {active && <View style={styles.radioInner} />}
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.radioLabel, active && { color: Colors.primary }]}>
+                <Text style={[styles.radioLabel, active && { color: colors.primary }]}>
                   {a.label}
                 </Text>
                 <Text style={styles.radioDesc}>{a.desc}</Text>
@@ -626,7 +634,7 @@ function Step3Availability({
               <Ionicons
                 name={d.icon as keyof typeof Ionicons.glyphMap}
                 size={14}
-                color={active ? Colors.primary : '#64748B'}
+                color={active ? colors.primary : colors.iconMuted}
               />
               <Text style={[styles.tagText, active && styles.tagTextActive]}>{d.label}</Text>
             </TouchableOpacity>
@@ -652,6 +660,8 @@ function Step4Experience({
   fieldErrors: FieldErrors;
   onChange: <K extends keyof VolunteerDraft>(key: K, value: VolunteerDraft[K]) => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   return (
     <View>
       <View style={styles.toggleRow}>
@@ -662,8 +672,8 @@ function Step4Experience({
         <Switch
           value={draft.has_previous_experience}
           onValueChange={(v) => onChange('has_previous_experience', v)}
-          trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
-          thumbColor={draft.has_previous_experience ? Colors.primary : '#FFFFFF'}
+          trackColor={{ false: colors.switchTrackOff, true: colors.switchTrackOn }}
+          thumbColor={draft.has_previous_experience ? colors.primary : colors.switchThumb}
         />
       </View>
 
@@ -703,6 +713,8 @@ function Step5Documents({
   uploading: DocumentKind | null;
   onPick: (kind: DocumentKind) => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const docs: { kind: DocumentKind; label: string; desc: string; url?: string }[] = [
     { kind: 'national_id', label: 'National ID', desc: 'Govt-issued ID card', url: draft.national_id_url },
     {
@@ -736,7 +748,7 @@ function Step5Documents({
                   <Ionicons
                     name={uploaded ? 'document-text' : 'document-text-outline'}
                     size={20}
-                    color={uploaded ? Colors.success : Colors.primary}
+                    color={uploaded ? colors.success : colors.primary}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -745,7 +757,7 @@ function Step5Documents({
                 </View>
                 {uploaded && (
                   <View style={styles.uploadedPill}>
-                    <Ionicons name="checkmark-circle" size={14} color={Colors.success} />
+                    <Ionicons name="checkmark-circle" size={14} color={colors.success} />
                     <Text style={styles.uploadedPillText}>Uploaded</Text>
                   </View>
                 )}
@@ -770,7 +782,7 @@ function Step5Documents({
               >
                 {isUploading ? (
                   <>
-                    <ActivityIndicator size="small" color={Colors.primary} />
+                    <ActivityIndicator size="small" color={colors.primary} />
                     <Text style={styles.docBtnText}>
                       Uploading… {Math.round(pct * 100)}%
                     </Text>
@@ -780,7 +792,7 @@ function Step5Documents({
                     <Ionicons
                       name={uploaded ? 'refresh-outline' : 'cloud-upload-outline'}
                       size={16}
-                      color={Colors.primary}
+                      color={colors.primary}
                     />
                     <Text style={styles.docBtnText}>{uploaded ? 'Replace' : 'Upload file'}</Text>
                   </>
@@ -794,317 +806,310 @@ function Step5Documents({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
+const createStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.background },
 
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  backBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
-  },
-  stepCount: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-    letterSpacing: 0.3,
-  },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 24,
+      paddingTop: 8,
+      paddingBottom: 12,
+    },
+    backBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.muted,
+    },
+    stepCount: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: c.textSecondary,
+      letterSpacing: 0.3,
+    },
 
-  progressBar: {
-    height: 4,
-    marginHorizontal: 24,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 2,
-    overflow: 'hidden',
-    marginBottom: 8,
-  },
-  progressFill: { height: '100%', backgroundColor: Colors.primary, borderRadius: 2 },
+    progressBar: {
+      height: 4,
+      marginHorizontal: 24,
+      backgroundColor: c.border,
+      borderRadius: 2,
+      overflow: 'hidden',
+      marginBottom: 8,
+    },
+    progressFill: { height: '100%', backgroundColor: c.primary, borderRadius: 2 },
 
-  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 32 },
+    scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 32 },
 
-  titleBlock: { marginTop: 16, marginBottom: 24 },
-  title: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: Colors.textPrimary,
-    letterSpacing: -0.5,
-    marginBottom: 6,
-  },
-  subtitle: { fontSize: 14, color: Colors.textSecondary, lineHeight: 21 },
+    titleBlock: { marginTop: 16, marginBottom: 24 },
+    title: {
+      fontSize: 26,
+      fontWeight: '800',
+      color: c.textPrimary,
+      letterSpacing: -0.5,
+      marginBottom: 6,
+    },
+    subtitle: { fontSize: 14, color: c.textSecondary, lineHeight: 21 },
 
-  form: {},
+    form: {},
 
-  errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#FEF2F2',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#FECACA',
-  },
-  errorBannerText: { color: Colors.danger, fontSize: 13, fontWeight: '500', flex: 1 },
+    errorBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: c.dangerSurface,
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: c.dangerSurfaceBorder,
+    },
+    errorBannerText: { color: c.danger, fontSize: 13, fontWeight: '500', flex: 1 },
 
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textSecondary,
-    marginBottom: 10,
-    marginLeft: 2,
-    marginTop: 4,
-  },
-  helperLine: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    marginBottom: 16,
-    lineHeight: 20,
-  },
+    sectionLabel: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: c.textSecondary,
+      marginBottom: 10,
+      marginLeft: 2,
+      marginTop: 4,
+    },
+    helperLine: {
+      fontSize: 13,
+      color: c.textSecondary,
+      marginBottom: 16,
+      lineHeight: 20,
+    },
 
-  fieldError: {
-    fontSize: 12,
-    color: Colors.danger,
-    marginTop: 6,
-    marginLeft: 4,
-    fontWeight: '600',
-  },
+    fieldError: {
+      fontSize: 12,
+      color: c.danger,
+      marginTop: 6,
+      marginLeft: 4,
+      fontWeight: '600',
+    },
 
-  // Photo
-  photoRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 24 },
-  photoCircle: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#BFDBFE',
-    overflow: 'hidden',
-  },
-  photoImage: { width: '100%', height: '100%' },
-  photoOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  photoBtnText: { color: Colors.primary, fontSize: 13, fontWeight: '700' },
-  photoHint: { fontSize: 12, color: Colors.textSecondary, marginTop: 6 },
+    photoRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 24 },
+    photoCircle: {
+      width: 84,
+      height: 84,
+      borderRadius: 42,
+      backgroundColor: c.primarySurface,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1.5,
+      borderColor: c.primarySurfaceBorder,
+      overflow: 'hidden',
+    },
+    photoImage: { width: '100%', height: '100%' },
+    photoOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: c.overlay,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    photoBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      alignSelf: 'flex-start',
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+      backgroundColor: c.primarySurface,
+      borderWidth: 1,
+      borderColor: c.primarySurfaceBorder,
+    },
+    photoBtnText: { color: c.primary, fontSize: 13, fontWeight: '700' },
+    photoHint: { fontSize: 12, color: c.textSecondary, marginTop: 6 },
 
-  // Chips (gender)
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-  },
-  chipActive: { backgroundColor: '#EFF6FF', borderColor: Colors.primary },
-  chipText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
-  chipTextActive: { color: Colors.primary },
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+    chip: {
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 999,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      backgroundColor: c.card,
+    },
+    chipActive: { backgroundColor: c.primarySurface, borderColor: c.primary },
+    chipText: { fontSize: 13, fontWeight: '600', color: c.textSecondary },
+    chipTextActive: { color: c.primary },
 
-  // Checkbox rows (skills)
-  checkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-  },
-  checkRowActive: { borderColor: Colors.primary, backgroundColor: '#EFF6FF' },
-  checkBox: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: '#CBD5E1',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkBoxActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  checkLabel: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary, flex: 1 },
+    checkRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 14,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      backgroundColor: c.card,
+    },
+    checkRowActive: { borderColor: c.primary, backgroundColor: c.primarySurface },
+    checkBox: {
+      width: 22,
+      height: 22,
+      borderRadius: 6,
+      borderWidth: 1.5,
+      borderColor: c.iconMuted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    checkBoxActive: { backgroundColor: c.primary, borderColor: c.primary },
+    checkLabel: { fontSize: 14, fontWeight: '600', color: c.textPrimary, flex: 1 },
 
-  // Radio rows (availability)
-  radioRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-  },
-  radioRowActive: { borderColor: Colors.primary, backgroundColor: '#EFF6FF' },
-  radioOuter: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1.5,
-    borderColor: '#CBD5E1',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioOuterActive: { borderColor: Colors.primary },
-  radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.primary },
-  radioLabel: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary, marginBottom: 2 },
-  radioDesc: { fontSize: 12, color: Colors.textSecondary },
+    radioRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      padding: 14,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      backgroundColor: c.card,
+    },
+    radioRowActive: { borderColor: c.primary, backgroundColor: c.primarySurface },
+    radioOuter: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      borderWidth: 1.5,
+      borderColor: c.iconMuted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    radioOuterActive: { borderColor: c.primary },
+    radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.primary },
+    radioLabel: { fontSize: 14, fontWeight: '700', color: c.textPrimary, marginBottom: 2 },
+    radioDesc: { fontSize: 12, color: c.textSecondary },
 
-  // Tags (disaster types)
-  tagWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-  },
-  tagActive: { backgroundColor: '#EFF6FF', borderColor: Colors.primary },
-  tagText: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary },
-  tagTextActive: { color: Colors.primary },
+    tagWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    tag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 999,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      backgroundColor: c.card,
+    },
+    tagActive: { backgroundColor: c.primarySurface, borderColor: c.primary },
+    tagText: { fontSize: 12, fontWeight: '600', color: c.textSecondary },
+    tagTextActive: { color: c.primary },
 
-  // Toggle (experience)
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
-  },
-  toggleLabel: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
-  toggleDesc: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+    toggleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      backgroundColor: c.inputBg,
+    },
+    toggleLabel: { fontSize: 15, fontWeight: '700', color: c.textPrimary },
+    toggleDesc: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
 
-  // Document cards
-  docCard: {
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-  },
-  docHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  docIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  docLabel: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
-  docDesc: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
-  uploadedPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: '#ECFDF5',
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-  },
-  uploadedPillText: { fontSize: 11, fontWeight: '700', color: Colors.success },
-  uploadProgressBar: {
-    height: 4,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 2,
-    marginTop: 12,
-    overflow: 'hidden',
-  },
-  uploadProgressFill: { height: '100%', backgroundColor: Colors.primary },
-  docBtn: {
-    marginTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  docBtnText: { color: Colors.primary, fontSize: 13, fontWeight: '700' },
+    docCard: {
+      padding: 14,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      backgroundColor: c.card,
+    },
+    docHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    docIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      backgroundColor: c.primarySurface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    docLabel: { fontSize: 14, fontWeight: '700', color: c.textPrimary },
+    docDesc: { fontSize: 12, color: c.textSecondary, marginTop: 1 },
+    uploadedPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      backgroundColor: c.successSurface,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: c.successSurfaceBorder,
+    },
+    uploadedPillText: { fontSize: 11, fontWeight: '700', color: c.success },
+    uploadProgressBar: {
+      height: 4,
+      backgroundColor: c.border,
+      borderRadius: 2,
+      marginTop: 12,
+      overflow: 'hidden',
+    },
+    uploadProgressFill: { height: '100%', backgroundColor: c.primary },
+    docBtn: {
+      marginTop: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingVertical: 12,
+      borderRadius: 10,
+      backgroundColor: c.primarySurface,
+      borderWidth: 1,
+      borderColor: c.primarySurfaceBorder,
+    },
+    docBtnText: { color: c.primary, fontSize: 13, fontWeight: '700' },
 
-  // Footer
-  footer: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 20 : 14,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    backgroundColor: '#FFFFFF',
-  },
-  backFooterBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-  },
-  backFooterText: { color: Colors.textPrimary, fontWeight: '700', fontSize: 14 },
-  nextBtn: {
-    flex: 1,
-    borderRadius: 14,
-    overflow: 'hidden',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  nextBtnGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-  },
-  nextBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15, letterSpacing: 0.3 },
-  btnDisabled: { opacity: 0.65 },
-});
+    footer: {
+      flexDirection: 'row',
+      gap: 12,
+      paddingHorizontal: 24,
+      paddingTop: 12,
+      paddingBottom: Platform.OS === 'ios' ? 20 : 14,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+      backgroundColor: c.background,
+    },
+    backFooterBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 18,
+      paddingVertical: 14,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderColor: c.border,
+      backgroundColor: c.card,
+    },
+    backFooterText: { color: c.textPrimary, fontWeight: '700', fontSize: 14 },
+    nextBtn: {
+      flex: 1,
+      borderRadius: 14,
+      overflow: 'hidden',
+      shadowColor: c.primary,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.2,
+      shadowRadius: 12,
+      elevation: 6,
+    },
+    nextBtnGradient: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingVertical: 14,
+    },
+    nextBtnText: { color: c.onPrimary, fontWeight: '700', fontSize: 15, letterSpacing: 0.3 },
+    btnDisabled: { opacity: 0.65 },
+  });

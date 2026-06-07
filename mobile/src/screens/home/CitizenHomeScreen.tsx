@@ -2,18 +2,16 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   Image,
   RefreshControl,
-  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
-import { Colors } from '../../constants/colors';
+import type { ThemeColors } from '../../constants/themes';
 import { NotificationBellButton } from '../../components/NotificationBellButton';
 import { LatestBroadcastBanner } from '../../components/LatestBroadcastBanner';
 import { CampaignCarousel } from '../../components/CampaignCarousel';
@@ -23,6 +21,8 @@ import { useHomeLocation } from './useHomeLocation';
 import { SectionTitle, SectionSkeleton, EmptyHint, formatTimeAgo } from './homeShared';
 import { ExpandableServiceGrid, type HomeServiceItem } from './ExpandableServiceGrid';
 import { openGeneralChannel } from '../chat/openGeneralChannel';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
 
 const PAGE_PAD = 16;
 
@@ -35,12 +35,110 @@ const SERVICE_ITEMS: HomeServiceItem[] = [
   { icon: 'people-outline', label: 'Community', onPress: () => void openGeneralChannel() },
   { icon: 'notifications-outline', label: 'Alerts', onPress: () => router.push('/(main)/notifications') },
   { icon: 'warning-outline', label: 'Disasters', onPress: () => router.push('/(main)/disasters') },
-  { icon: 'help-circle-outline', label: 'Support', onPress: () => router.push('/(main)/campaigns') },
+  { icon: 'help-circle-outline', label: 'Support', onPress: () => router.push('/(main)/settings/support') },
   { icon: 'settings-outline', label: 'Settings', onPress: () => router.push('/(main)/settings') },
   { icon: 'flag-outline', label: 'Report', onPress: () => router.push('/(main)/report') },
 ];
 
+const createStyles = (c: ThemeColors) => ({
+  screen: { flex: 1, backgroundColor: c.background },
+  scrollContent: { paddingBottom: 28 },
+
+  headerStrip: {
+    backgroundColor: c.card,
+    marginHorizontal: PAGE_PAD,
+    marginTop: 6,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: c.border,
+  },
+  headerRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 12 },
+  headerTextCol: { flex: 1 },
+  brand: { fontSize: 11, fontWeight: '800' as const, color: c.primary, letterSpacing: 0.8 },
+  greeting: { fontSize: 17, fontWeight: '800' as const, color: c.textPrimary, marginTop: 2 },
+  avatar: { width: 44, height: 44, borderRadius: 22 },
+  avatarPh: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: c.primarySurface,
+    borderWidth: 1,
+    borderColor: c.primarySurfaceBorder,
+  },
+  tagline: {
+    marginHorizontal: PAGE_PAD + 2,
+    marginTop: 12,
+    marginBottom: 14,
+    fontSize: 13,
+    color: c.textSecondary,
+    fontWeight: '500' as const,
+  },
+
+  incompleteCard: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 12,
+    marginHorizontal: PAGE_PAD,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: c.card,
+    borderWidth: 1,
+    borderColor: c.warningSurfaceBorder,
+    marginBottom: 12,
+  },
+  incompleteTitle: { fontSize: 14, fontWeight: '700' as const, color: c.warning },
+  incompleteSub: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
+
+  locBanner: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+    marginHorizontal: PAGE_PAD,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: c.card,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: c.border,
+  },
+  locBannerText: { flex: 1, fontSize: 13, color: c.textSecondary, fontWeight: '600' as const },
+
+  section: { marginBottom: 18, paddingHorizontal: PAGE_PAD },
+
+  campaignSection: { marginBottom: 18, paddingHorizontal: PAGE_PAD },
+
+  updatesShell: {
+    backgroundColor: c.card,
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderWidth: 1,
+    borderColor: c.border,
+  },
+  updateRow: {
+    flexDirection: 'row' as const,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    gap: 12,
+    alignItems: 'flex-start' as const,
+  },
+  updateLine: {
+    width: 3,
+    borderRadius: 2,
+    backgroundColor: c.primary,
+    marginTop: 4,
+    minHeight: 36,
+  },
+  updateTitle: { fontSize: 15, fontWeight: '700' as const, color: c.textPrimary },
+  updateCampaign: { fontSize: 12, color: c.primary, marginTop: 4, fontWeight: '600' as const },
+  updateTime: { fontSize: 12, color: c.textSecondary, marginTop: 6 },
+});
+
 export default function CitizenHomeScreen() {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
+
   const profile = useAuthStore((s) => s.profile);
   const user = useAuthStore((s) => s.user);
 
@@ -77,13 +175,11 @@ export default function CitizenHomeScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <StatusBar barStyle="dark-content" />
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
       >
         <View style={styles.headerStrip}>
@@ -93,7 +189,7 @@ export default function CitizenHomeScreen() {
                 <Image source={{ uri: profile.profile_photo_url }} style={styles.avatar} />
               ) : (
                 <View style={[styles.avatar, styles.avatarPh]}>
-                  <Ionicons name="person" size={20} color={Colors.primary} />
+                  <Ionicons name="person" size={20} color={colors.primary} />
                 </View>
               )}
             </TouchableOpacity>
@@ -121,18 +217,18 @@ export default function CitizenHomeScreen() {
             }
             style={styles.incompleteCard}
           >
-            <Ionicons name="alert-circle" size={18} color={Colors.warning} />
+            <Ionicons name="alert-circle" size={18} color={colors.warning} />
             <View style={{ flex: 1 }}>
               <Text style={styles.incompleteTitle}>Complete your profile</Text>
               <Text style={styles.incompleteSub}>Add missing details to unlock all features.</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            <Ionicons name="chevron-forward" size={18} color={colors.chevron} />
           </TouchableOpacity>
         ) : null}
 
         {permissionDenied ? (
           <View style={styles.locBanner}>
-            <Ionicons name="location-outline" size={18} color={Colors.primary} />
+            <Ionicons name="location-outline" size={18} color={colors.primary} />
             <Text style={styles.locBannerText}>Turn on location for nearby alerts.</Text>
           </View>
         ) : null}
@@ -184,98 +280,3 @@ export default function CitizenHomeScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: Colors.background },
-  scrollContent: { paddingBottom: 28 },
-
-  headerStrip: {
-    backgroundColor: Colors.card,
-    marginHorizontal: PAGE_PAD,
-    marginTop: 6,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerTextCol: { flex: 1 },
-  brand: { fontSize: 11, fontWeight: '800', color: Colors.primary, letterSpacing: 0.8 },
-  greeting: { fontSize: 17, fontWeight: '800', color: Colors.textPrimary, marginTop: 2 },
-  avatar: { width: 44, height: 44, borderRadius: 22 },
-  avatarPh: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  tagline: {
-    marginHorizontal: PAGE_PAD + 2,
-    marginTop: 12,
-    marginBottom: 14,
-    fontSize: 13,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-
-  incompleteCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginHorizontal: PAGE_PAD,
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: Colors.card,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    marginBottom: 12,
-  },
-  incompleteTitle: { fontSize: 14, fontWeight: '700', color: '#92400E' },
-  incompleteSub: { fontSize: 12, color: '#A16207', marginTop: 2 },
-
-  locBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginHorizontal: PAGE_PAD,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: Colors.card,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  locBannerText: { flex: 1, fontSize: 13, color: Colors.textSecondary, fontWeight: '600' },
-
-  section: { marginBottom: 18, paddingHorizontal: PAGE_PAD },
-
-  campaignSection: { marginBottom: 18, paddingHorizontal: PAGE_PAD },
-
-  updatesShell: {
-    backgroundColor: Colors.card,
-    borderRadius: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  updateRow: {
-    flexDirection: 'row',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    gap: 12,
-    alignItems: 'flex-start',
-  },
-  updateLine: {
-    width: 3,
-    borderRadius: 2,
-    backgroundColor: Colors.primary,
-    marginTop: 4,
-    minHeight: 36,
-  },
-  updateTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
-  updateCampaign: { fontSize: 12, color: Colors.primary, marginTop: 4, fontWeight: '600' },
-  updateTime: { fontSize: 12, color: Colors.textSecondary, marginTop: 6 },
-});

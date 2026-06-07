@@ -3,8 +3,11 @@ import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { Slot, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
-import { Colors } from '../constants/colors';
+import { useSettingsStore } from '../store/settingsStore';
 import { ToastHost } from '../components/ToastHost';
+import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
+import { I18nProvider } from '../i18n/I18nContext';
+import { useThemedStyles } from '../hooks/useThemedStyles';
 import {
   registerForPushNotifications,
   setupNotificationNavigation,
@@ -13,10 +16,42 @@ import { flushPendingMessages } from '../services/chatService';
 import { startNotificationListener } from '../services/notificationService';
 
 function SplashScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles((c) => ({
+    splash: {
+      flex: 1,
+      backgroundColor: c.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 16,
+    },
+    splashText: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: c.primary,
+      letterSpacing: 1,
+    },
+  }));
+
   return (
     <View style={styles.splash}>
-      <ActivityIndicator size="large" color={Colors.primary} />
+      <ActivityIndicator size="large" color={colors.primary} />
       <Text style={styles.splashText}>CrisisLink Network</Text>
+    </View>
+  );
+}
+
+function SplashOverlay() {
+  const styles = useThemedStyles((c) => ({
+    splashOverlay: {
+      backgroundColor: c.background,
+      zIndex: 999,
+    },
+  }));
+
+  return (
+    <View style={[StyleSheet.absoluteFillObject, styles.splashOverlay]} pointerEvents="auto">
+      <SplashScreen />
     </View>
   );
 }
@@ -53,6 +88,15 @@ export default function RootLayout() {
   }, [user?.id]);
 
   useEffect(() => {
+    if (!user?.id) {
+      useSettingsStore.getState().reset();
+      return;
+    }
+    const isVolunteer = profile?.role === 'volunteer';
+    useSettingsStore.getState().initialize(user.id, isVolunteer).catch(() => {});
+  }, [user?.id, profile?.role]);
+
+  useEffect(() => {
     if (isLoading) return;
     // Avoid router.replace before the Stack / Tabs navigator exists (first paint).
     if (!rootNavState?.key) return;
@@ -85,33 +129,13 @@ export default function RootLayout() {
   // Slot must mount on the first render or expo-router throws on early router.replace().
   return (
     <SafeAreaProvider>
-      <Slot />
-      {isLoading ? (
-        <View style={[StyleSheet.absoluteFillObject, styles.splashOverlay]} pointerEvents="auto">
-          <SplashScreen />
-        </View>
-      ) : null}
-      <ToastHost />
+      <ThemeProvider>
+        <I18nProvider>
+          <Slot />
+          {isLoading ? <SplashOverlay /> : null}
+          <ToastHost />
+        </I18nProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  splashOverlay: {
-    backgroundColor: Colors.background,
-    zIndex: 999,
-  },
-  splash: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  splashText: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: Colors.primary,
-    letterSpacing: 1,
-  },
-});

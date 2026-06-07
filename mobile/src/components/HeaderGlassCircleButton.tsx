@@ -7,6 +7,8 @@ import {
   type TouchableOpacityProps,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../hooks/useThemedStyles';
 
 const SIZE = 44;
 
@@ -22,6 +24,35 @@ export function HeaderGlassCircleButton({
   children,
   accessibilityLabel,
 }: Props) {
+  const { isDark } = useTheme();
+  const styles = useThemedStyles((c, dark) => ({
+    touch: {
+      shadowColor: c.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: dark ? 0.25 : 0.07,
+      shadowRadius: 6,
+      elevation: 3,
+    },
+    circle: {
+      width: SIZE,
+      height: SIZE,
+      borderRadius: SIZE / 2,
+      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: dark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.85)',
+    },
+    webGlass: {
+      backgroundColor: dark ? 'rgba(30, 41, 59, 0.92)' : 'rgba(248, 250, 252, 0.92)',
+    },
+    iconLayer: {
+      ...StyleSheet.absoluteFillObject,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  }));
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -36,7 +67,7 @@ export function HeaderGlassCircleButton({
         {Platform.OS === 'web' ? (
           <View style={[StyleSheet.absoluteFillObject, styles.webGlass]} />
         ) : (
-          <BlurView intensity={52} tint="light" style={StyleSheet.absoluteFillObject} />
+          <BlurView intensity={52} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFillObject} />
         )}
         <View style={styles.iconLayer} pointerEvents="none">
           {children}
@@ -45,31 +76,3 @@ export function HeaderGlassCircleButton({
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  touch: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  circle: {
-    width: SIZE,
-    height: SIZE,
-    borderRadius: SIZE / 2,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255, 255, 255, 0.85)',
-  },
-  webGlass: {
-    backgroundColor: 'rgba(248, 250, 252, 0.92)',
-  },
-  iconLayer: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

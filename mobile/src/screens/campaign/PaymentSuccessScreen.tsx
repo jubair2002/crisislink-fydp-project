@@ -13,12 +13,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import { copyText } from '../../utils/copyText';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { pollDonationStatus } from '../../services/donationService';
 import { saveDonationRecord } from '../../services/donationHistoryStorage';
 import { useToastStore } from '../../store/toastStore';
 
 export default function PaymentSuccessScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const params = useLocalSearchParams<{
     donationId?: string;
     code?: string;
@@ -86,7 +90,7 @@ export default function PaymentSuccessScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Animated.View style={[styles.checkCircle, { transform: [{ scale }] }]}>
-        <Ionicons name="checkmark" size={48} color="#FFF" />
+        <Ionicons name="checkmark" size={48} color={colors.onPrimary} />
       </Animated.View>
 
       <Text style={styles.title}>Thank you!</Text>
@@ -97,13 +101,13 @@ export default function PaymentSuccessScreen() {
       </Text>
 
       {loading ? (
-        <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 20 }} />
+        <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 20 }} />
       ) : trackingCode ? (
         <View style={styles.codeBox}>
           <Text style={styles.codeLabel}>Donation tracking ID</Text>
           <Text style={styles.code}>{trackingCode}</Text>
           <TouchableOpacity style={styles.copyInline} onPress={() => void handleCopy()}>
-            <Ionicons name="copy-outline" size={16} color={Colors.primary} />
+            <Ionicons name="copy-outline" size={16} color={colors.primary} />
             <Text style={styles.copyInlineText}>Copy ID</Text>
           </TouchableOpacity>
         </View>
@@ -122,13 +126,13 @@ export default function PaymentSuccessScreen() {
           })
         }
       >
-        <Ionicons name="receipt-outline" size={18} color="#FFF" />
+        <Ionicons name="receipt-outline" size={18} color={colors.onPrimary} />
         <Text style={styles.primaryBtnText}>Track your donation</Text>
       </TouchableOpacity>
 
       {trackingCode ? (
         <TouchableOpacity style={styles.secondaryBtn} onPress={() => void handleShare()}>
-          <Ionicons name="share-social-outline" size={18} color={Colors.primary} />
+          <Ionicons name="share-social-outline" size={18} color={colors.primary} />
           <Text style={styles.secondaryBtnText}>Share</Text>
         </TouchableOpacity>
       ) : null}
@@ -140,10 +144,10 @@ export default function PaymentSuccessScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (c: ThemeColors, _isDark: boolean) => ({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: c.background,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
@@ -152,31 +156,31 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: Colors.success,
+    backgroundColor: c.success,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
   },
-  title: { fontSize: 28, fontWeight: '800', color: Colors.textPrimary },
+  title: { fontSize: 28, fontWeight: '800', color: c.textPrimary },
   subtitle: {
     fontSize: 15,
-    color: Colors.textSecondary,
+    color: c.textSecondary,
     textAlign: 'center',
     marginTop: 10,
     lineHeight: 22,
   },
   codeBox: {
     marginTop: 24,
-    backgroundColor: Colors.card,
+    backgroundColor: c.card,
     borderRadius: 14,
     padding: 20,
     width: '100%',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: c.border,
   },
-  codeLabel: { fontSize: 12, color: Colors.textSecondary, fontWeight: '600' },
-  code: { fontSize: 22, fontWeight: '800', color: Colors.primary, marginTop: 6, letterSpacing: 1 },
+  codeLabel: { fontSize: 12, color: c.textSecondary, fontWeight: '600' },
+  code: { fontSize: 22, fontWeight: '800', color: c.primary, marginTop: 6, letterSpacing: 1 },
   copyInline: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -185,13 +189,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 8,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: c.primarySurface,
   },
-  copyInlineText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
-  pendingNote: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', marginTop: 20 },
+  copyInlineText: { fontSize: 14, fontWeight: '600', color: c.primary },
+  pendingNote: { fontSize: 14, color: c.textSecondary, textAlign: 'center', marginTop: 20 },
   primaryBtn: {
     marginTop: 28,
-    backgroundColor: Colors.primary,
+    backgroundColor: c.primary,
     borderRadius: 14,
     paddingVertical: 16,
     paddingHorizontal: 24,
@@ -201,7 +205,7 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'center',
   },
-  primaryBtnText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  primaryBtnText: { color: c.onPrimary, fontSize: 16, fontWeight: '700' },
   secondaryBtn: {
     marginTop: 12,
     flexDirection: 'row',
@@ -209,7 +213,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 14,
   },
-  secondaryBtnText: { color: Colors.primary, fontSize: 15, fontWeight: '600' },
+  secondaryBtnText: { color: c.primary, fontSize: 15, fontWeight: '600' },
   linkBtn: { marginTop: 16 },
-  linkText: { color: Colors.textSecondary, fontSize: 14 },
+  linkText: { color: c.textSecondary, fontSize: 14 },
 });

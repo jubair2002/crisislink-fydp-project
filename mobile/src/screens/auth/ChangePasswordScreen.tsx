@@ -9,19 +9,22 @@ import {
   Platform,
   Animated,
   ActivityIndicator,
-  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { Input } from '../../components/Input';
 import { useAuthStore } from '../../store/authStore';
 import { changePassword } from '../../services/authService';
 
 export default function ChangePasswordScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { user } = useAuthStore();
 
   const [current, setCurrent] = useState('');
@@ -63,9 +66,9 @@ export default function ChangePasswordScreen() {
 
   const passwordStrength = () => {
     if (!next) return null;
-    if (next.length < 6) return { label: 'Weak', color: Colors.danger, percent: 33 };
-    if (next.length < 10) return { label: 'Good', color: Colors.warning, percent: 66 };
-    return { label: 'Strong', color: Colors.success, percent: 100 };
+    if (next.length < 6) return { label: 'Weak', color: colors.danger, percent: 33 };
+    if (next.length < 10) return { label: 'Good', color: colors.warning, percent: 66 };
+    return { label: 'Strong', color: colors.success, percent: 100 };
   };
   const strength = passwordStrength();
 
@@ -94,14 +97,12 @@ export default function ChangePasswordScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
       <View style={styles.topBar}>
         <TouchableOpacity
           onPress={() => router.replace('/(main)/profile')}
           style={styles.backBtn}
         >
-          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
+          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.topTitle}>Change password</Text>
         <View style={{ width: 42 }} />
@@ -119,7 +120,7 @@ export default function ChangePasswordScreen() {
           {success ? (
             <View style={styles.successCard}>
               <View style={styles.successIcon}>
-                <Ionicons name="checkmark-circle" size={36} color={Colors.success} />
+                <Ionicons name="checkmark-circle" size={36} color={colors.success} />
               </View>
               <Text style={styles.successTitle}>Password updated</Text>
               <Text style={styles.successBody}>
@@ -130,7 +131,7 @@ export default function ChangePasswordScreen() {
                 activeOpacity={0.88}
                 onPress={() => router.replace('/(main)/profile')}
               >
-                <LinearGradient colors={['#2563EB', '#1D4ED8']} style={styles.successBtnGradient}>
+                <LinearGradient colors={[colors.primary, colors.primary]} style={styles.successBtnGradient}>
                   <Text style={styles.successBtnText}>Back to Profile</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -143,7 +144,7 @@ export default function ChangePasswordScreen() {
 
               {error !== '' && (
                 <View style={styles.errorBanner}>
-                  <Ionicons name="alert-circle-outline" size={18} color={Colors.danger} />
+                  <Ionicons name="alert-circle-outline" size={18} color={colors.danger} />
                   <Text style={styles.errorBannerText}>{error}</Text>
                 </View>
               )}
@@ -205,9 +206,9 @@ export default function ChangePasswordScreen() {
                 disabled={loading}
                 activeOpacity={0.88}
               >
-                <LinearGradient colors={['#2563EB', '#1D4ED8']} style={styles.submitBtnGradient}>
+                <LinearGradient colors={[colors.primary, colors.primary]} style={styles.submitBtnGradient}>
                   {loading ? (
-                    <ActivityIndicator color="#FFFFFF" />
+                    <ActivityIndicator color={colors.onPrimary} />
                   ) : (
                     <Text style={styles.submitBtnText}>Update password</Text>
                   )}
@@ -221,8 +222,8 @@ export default function ChangePasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
+const createStyles = (c: ThemeColors, _isDark: boolean) => ({
+  root: { flex: 1, backgroundColor: c.background },
 
   topBar: {
     flexDirection: 'row',
@@ -231,7 +232,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: c.border,
   },
   backBtn: {
     width: 42,
@@ -239,13 +240,13 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: c.muted,
   },
-  topTitle: { fontSize: 16, fontWeight: '800', color: Colors.textPrimary },
+  topTitle: { fontSize: 16, fontWeight: '800', color: c.textPrimary },
 
   scrollContent: { flexGrow: 1, padding: 24, paddingBottom: 40 },
 
-  intro: { fontSize: 14, color: Colors.textSecondary, lineHeight: 20, marginBottom: 16 },
+  intro: { fontSize: 14, color: c.textSecondary, lineHeight: 20, marginBottom: 16 },
 
   form: {},
 
@@ -253,14 +254,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: c.dangerSurface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: c.dangerSurfaceBorder,
   },
-  errorBannerText: { color: Colors.danger, fontSize: 13, fontWeight: '500', flex: 1 },
+  errorBannerText: { color: c.danger, fontSize: 13, fontWeight: '500', flex: 1 },
 
   strengthRow: {
     flexDirection: 'row',
@@ -273,7 +274,7 @@ const styles = StyleSheet.create({
   strengthBar: {
     flex: 1,
     height: 4,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: c.border,
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -284,7 +285,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     marginTop: 8,
-    shadowColor: Colors.primary,
+    shadowColor: c.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 16,
@@ -292,37 +293,37 @@ const styles = StyleSheet.create({
   },
   submitBtnDisabled: { opacity: 0.65 },
   submitBtnGradient: { alignItems: 'center', justifyContent: 'center', paddingVertical: 17 },
-  submitBtnText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.3 },
+  submitBtnText: { fontSize: 16, fontWeight: '700', color: c.onPrimary, letterSpacing: 0.3 },
 
   successCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.card,
     borderRadius: 24,
     padding: 32,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: c.border,
     marginTop: 12,
   },
   successIcon: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: c.successSurface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#A7F3D0',
+    borderColor: c.successSurfaceBorder,
     marginBottom: 12,
   },
-  successTitle: { fontSize: 20, fontWeight: '800', color: Colors.textPrimary, marginBottom: 8 },
+  successTitle: { fontSize: 20, fontWeight: '800', color: c.textPrimary, marginBottom: 8 },
   successBody: {
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: c.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,
   },
   successBtn: { borderRadius: 14, overflow: 'hidden', alignSelf: 'stretch' },
   successBtnGradient: { paddingVertical: 14, alignItems: 'center' },
-  successBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  successBtnText: { color: c.onPrimary, fontSize: 15, fontWeight: '700' },
 });

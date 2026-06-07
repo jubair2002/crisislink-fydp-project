@@ -1,8 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Colors } from '../../constants/colors';
+import type { ThemeColors } from '../../constants/themes';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
 import type { DisasterSeverity } from '../../types/disaster';
 
 export function formatTimeAgo(iso: string): string {
@@ -21,23 +23,78 @@ export function formatMonthYear(iso: string): string {
   return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 }
 
-export function severityColors(sev: string): { bg: string; fg: string } {
+function severityColors(sev: string, c: ThemeColors): { bg: string; fg: string } {
   switch (sev) {
     case 'critical':
-      return { bg: Colors.danger, fg: '#FFFFFF' };
+      return { bg: c.danger, fg: c.onPrimary };
     case 'high':
-      return { bg: Colors.warning, fg: '#0F172A' };
+      return { bg: c.warning, fg: c.dark };
     case 'medium':
-      return { bg: '#EAB308', fg: '#0F172A' };
+      return { bg: '#EAB308', fg: c.dark };
     case 'low':
-      return { bg: Colors.success, fg: '#FFFFFF' };
+      return { bg: c.success, fg: c.onPrimary };
     default:
-      return { bg: '#CBD5E1', fg: '#0F172A' };
+      return { bg: c.iconMuted, fg: c.dark };
   }
 }
 
+const createSharedStyles = (c: ThemeColors) => ({
+  sectionHead: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: c.textPrimary,
+  },
+  sectionAction: { fontSize: 13, fontWeight: '700' as const, color: c.primary },
+  skelCard: {
+    backgroundColor: c.card,
+    borderRadius: 12,
+    padding: 14,
+    paddingVertical: 16,
+    shadowColor: c.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  skelLine: {
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: c.skeleton,
+  },
+  errRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  errText: { flex: 1, fontSize: 13, color: c.textSecondary },
+  emptyBox: {
+    alignItems: 'center' as const,
+    gap: 8,
+    paddingVertical: 20,
+    paddingHorizontal: 12,
+  },
+  emptyText: { fontSize: 14, color: c.textSecondary, textAlign: 'center' as const },
+  sevBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    alignSelf: 'flex-start' as const,
+  },
+  sevBadgeText: { fontSize: 10, fontWeight: '800' as const, textTransform: 'capitalize' as const },
+});
+
 export function SeverityBadge({ severity }: { severity: DisasterSeverity | string }) {
-  const { bg, fg } = severityColors(String(severity));
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createSharedStyles);
+  const { bg, fg } = severityColors(String(severity), colors);
   return (
     <View style={[styles.sevBadge, { backgroundColor: bg }]}>
       <Text style={[styles.sevBadgeText, { color: fg }]}>{String(severity)}</Text>
@@ -54,6 +111,7 @@ export function SectionTitle({
   actionLabel?: string;
   onAction?: () => void;
 }) {
+  const styles = useThemedStyles(createSharedStyles);
   return (
     <View style={styles.sectionHead}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -67,6 +125,7 @@ export function SectionTitle({
 }
 
 export function SectionSkeleton({ rows = 2 }: { rows?: number }) {
+  const styles = useThemedStyles(createSharedStyles);
   return (
     <View style={{ gap: 10 }}>
       {Array.from({ length: rows }).map((_, i) => (
@@ -87,78 +146,23 @@ export function SectionError({
   message: string;
   onRetry: () => void;
 }) {
+  const styles = useThemedStyles(createSharedStyles);
+  const { colors } = useTheme();
   return (
     <TouchableOpacity style={styles.errRow} onPress={onRetry} activeOpacity={0.85}>
-      <Ionicons name="alert-circle-outline" size={18} color={Colors.textSecondary} />
+      <Ionicons name="alert-circle-outline" size={18} color={colors.textSecondary} />
       <Text style={styles.errText}>Could not load. Tap to retry.</Text>
     </TouchableOpacity>
   );
 }
 
 export function EmptyHint({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) {
+  const styles = useThemedStyles(createSharedStyles);
+  const { colors } = useTheme();
   return (
     <View style={styles.emptyBox}>
-      <Ionicons name={icon} size={36} color="#CBD5E1" />
+      <Ionicons name={icon} size={36} color={colors.iconMuted} />
       <Text style={styles.emptyText}>{text}</Text>
     </View>
   );
 }
-
-export const cardShadow = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.card,
-    borderRadius: 12,
-    padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-});
-
-const styles = StyleSheet.create({
-  sectionHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-  },
-  sectionAction: { fontSize: 13, fontWeight: '700', color: Colors.primary },
-  skelCard: {
-    ...cardShadow.card,
-    paddingVertical: 16,
-  },
-  skelLine: {
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#E2E8F0',
-  },
-  errRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-  },
-  errText: { flex: 1, fontSize: 13, color: Colors.textSecondary },
-  emptyBox: {
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 20,
-    paddingHorizontal: 12,
-  },
-  emptyText: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center' },
-  sevBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  sevBadgeText: { fontSize: 10, fontWeight: '800', textTransform: 'capitalize' },
-});

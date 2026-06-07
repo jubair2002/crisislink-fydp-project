@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
-import { Colors } from '../constants/colors';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../hooks/useThemedStyles';
 import {
   selectLatestUnreadBroadcast,
   useNotificationStore,
@@ -20,6 +21,35 @@ function isWithinHomeBannerWindow(createdAt: string): boolean {
 
 /** Surfaces the newest unread admin broadcast on home for the first minute only. */
 export function LatestBroadcastBanner() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles((c) => ({
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      marginHorizontal: 16,
+      marginBottom: 12,
+      padding: 14,
+      borderRadius: 12,
+      backgroundColor: c.warningSurface,
+      borderWidth: 1,
+      borderColor: c.warningSurfaceBorder,
+    },
+    iconWrap: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: c.warningSurfaceBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    body: { flex: 1, gap: 2 },
+    label: { fontSize: 11, fontWeight: '800', color: c.warning, letterSpacing: 0.3 },
+    title: { fontSize: 15, fontWeight: '800', color: c.textPrimary },
+    message: { fontSize: 13, color: c.textSecondary, lineHeight: 18 },
+    time: { fontSize: 11, color: c.chevron, marginTop: 2 },
+  }));
+
   const latest = useNotificationStore(selectLatestUnreadBroadcast);
   const [, setExpired] = useState(0);
 
@@ -44,7 +74,7 @@ export function LatestBroadcastBanner() {
       onPress={() => router.push('/(main)/notifications')}
     >
       <View style={styles.iconWrap}>
-        <Ionicons name="megaphone" size={18} color={Colors.warning} />
+        <Ionicons name="megaphone" size={18} color={colors.warning} />
       </View>
       <View style={styles.body}>
         <Text style={styles.label}>Admin broadcast</Text>
@@ -56,35 +86,7 @@ export function LatestBroadcastBanner() {
         </Text>
         <Text style={styles.time}>{formatTimeAgo(latest.created_at)}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+      <Ionicons name="chevron-forward" size={18} color={colors.chevron} />
     </TouchableOpacity>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: '#FFFBEB',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-  iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FEF3C7',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  body: { flex: 1, gap: 2 },
-  label: { fontSize: 11, fontWeight: '800', color: Colors.warning, letterSpacing: 0.3 },
-  title: { fontSize: 15, fontWeight: '800', color: Colors.textPrimary },
-  message: { fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
-  time: { fontSize: 11, color: '#94A3B8', marginTop: 2 },
-});

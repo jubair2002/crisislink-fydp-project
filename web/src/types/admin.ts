@@ -311,3 +311,58 @@ export interface ChatMonitorRow {
   member_count: number;
   created_at: string;
 }
+
+export type ReportType = 'campaign' | 'platform' | 'feedback';
+export type ReportStatus = 'submitted' | 'in_review' | 'resolved' | 'rejected';
+
+export interface ReportFilters {
+  report_type?: ReportType | '';
+  status?: ReportStatus | '';
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+  sortBy?: 'created_at' | 'status' | 'report_type';
+  sortDir?: 'asc' | 'desc';
+}
+
+export interface ReportListRow {
+  id: string;
+  user_id: string;
+  report_type: ReportType;
+  description: string;
+  image_url: string | null;
+  campaign_id: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  location_label: string | null;
+  status: ReportStatus;
+  resolution_message: string | null;
+  created_at: string;
+  updated_at: string;
+  reporter?: Pick<Profile, 'name' | 'email' | 'city'> | null;
+  campaign?: { id: string; title: string } | null;
+}
+
+export interface ReportResponseRow {
+  id: string;
+  report_id: string;
+  responder_user_id: string;
+  message: string;
+  created_at: string;
+  responder?: Pick<Profile, 'name' | 'email'> | null;
+}
+
+export interface ReportStatusEventRow {
+  id: string;
+  report_id: string;
+  status: string;
+  note: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface ReportDetailPayload {
+  report: ReportListRow;
+  responses: ReportResponseRow[];
+  statusEvents: ReportStatusEventRow[];
+}

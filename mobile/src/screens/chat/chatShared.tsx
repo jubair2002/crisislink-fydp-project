@@ -1,7 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Switch, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { formatTimeAgo } from '../home/homeShared';
 import type { MessageType } from '../../types/chat';
 
@@ -57,23 +59,76 @@ export function formatMessageTime(iso: string): string {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+const createSharedStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    badge: {
+      minWidth: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: c.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 6,
+    },
+    badgeText: { color: c.onPrimary, fontSize: 11, fontWeight: '800' },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+    },
+    backBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: c.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    backBtnPlaceholder: { width: 42, height: 42 },
+    topTitle: {
+      flex: 1,
+      textAlign: 'center',
+      fontSize: 16,
+      fontWeight: '800',
+      color: c.textPrimary,
+      marginHorizontal: 8,
+    },
+    topRight: { minWidth: 42, alignItems: 'flex-end', justifyContent: 'center' },
+    activeToggleWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 4,
+    },
+    activeToggleSpinner: { marginRight: 2 },
+    activeToggleLabel: { fontSize: 12, fontWeight: '700', minWidth: 36, textAlign: 'right' },
+    activeToggleLabelOn: { color: c.success },
+    activeToggleLabelOff: { color: c.textSecondary },
+  });
+
 export function StatusIcon({ status }: { status: string }) {
+  const { colors } = useTheme();
+  const muted = colors.chevron;
+
   if (status === 'pending') {
-    return <Ionicons name="time-outline" size={14} color="#94A3B8" />;
+    return <Ionicons name="time-outline" size={14} color={muted} />;
   }
   if (status === 'sent') {
-    return <Ionicons name="checkmark" size={14} color="#94A3B8" />;
+    return <Ionicons name="checkmark" size={14} color={muted} />;
   }
   if (status === 'delivered') {
-    return <Ionicons name="checkmark-done" size={14} color="#94A3B8" />;
+    return <Ionicons name="checkmark-done" size={14} color={muted} />;
   }
   if (status === 'seen') {
-    return <Ionicons name="checkmark-done" size={14} color={Colors.primary} />;
+    return <Ionicons name="checkmark-done" size={14} color={colors.primary} />;
   }
   return null;
 }
 
 export function UnreadBadge({ count }: { count: number }) {
+  const styles = useThemedStyles(createSharedStyles);
   if (count <= 0) return null;
   return (
     <View style={styles.badge}>
@@ -93,38 +148,33 @@ export function ActiveToggle({
   loading?: boolean;
   disabled?: boolean;
 }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createSharedStyles);
+
   return (
-    <View style={activeToggleStyles.wrap}>
+    <View style={styles.activeToggleWrap}>
       {loading ? (
-        <ActivityIndicator size="small" color={Colors.primary} style={activeToggleStyles.spinner} />
+        <ActivityIndicator size="small" color={colors.primary} style={styles.activeToggleSpinner} />
       ) : null}
-      <Text style={[activeToggleStyles.label, value ? activeToggleStyles.labelOn : activeToggleStyles.labelOff]}>
+      <Text
+        style={[
+          styles.activeToggleLabel,
+          value ? styles.activeToggleLabelOn : styles.activeToggleLabelOff,
+        ]}
+      >
         {value ? 'Active' : 'Off'}
       </Text>
       <Switch
         value={value}
         onValueChange={onValueChange}
         disabled={disabled || loading}
-        trackColor={{ false: '#CBD5E1', true: '#93C5FD' }}
-        thumbColor={value ? Colors.primary : '#F8FAFC'}
-        ios_backgroundColor="#CBD5E1"
+        trackColor={{ false: colors.switchTrackOff, true: colors.switchTrackOn }}
+        thumbColor={value ? colors.primary : colors.switchThumb}
+        ios_backgroundColor={colors.switchTrackOff}
       />
     </View>
   );
 }
-
-const activeToggleStyles = StyleSheet.create({
-  wrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 4,
-  },
-  spinner: { marginRight: 2 },
-  label: { fontSize: 12, fontWeight: '700', minWidth: 36, textAlign: 'right' },
-  labelOn: { color: Colors.success },
-  labelOff: { color: Colors.textSecondary },
-});
 
 export function ChatTopBar({
   title,
@@ -137,13 +187,16 @@ export function ChatTopBar({
   right?: React.ReactNode;
   hideBack?: boolean;
 }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createSharedStyles);
+
   return (
     <View style={styles.topBar}>
       {hideBack ? (
         <View style={styles.backBtnPlaceholder} />
       ) : (
         <TouchableOpacity onPress={onBack} style={styles.backBtn} activeOpacity={0.7} hitSlop={10}>
-          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
+          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
       )}
       <Text style={styles.topTitle} numberOfLines={1}>
@@ -155,41 +208,3 @@ export function ChatTopBar({
 }
 
 export { formatTimeAgo };
-
-const styles = StyleSheet.create({
-  badge: {
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: Colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-  },
-  badgeText: { color: '#FFF', fontSize: 11, fontWeight: '800' },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  backBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backBtnPlaceholder: { width: 42, height: 42 },
-  topTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '800',
-    color: Colors.textPrimary,
-    marginHorizontal: 8,
-  },
-  topRight: { minWidth: 42, alignItems: 'flex-end', justifyContent: 'center' },
-});

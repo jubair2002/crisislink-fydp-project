@@ -1,7 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { formatTimeAgo } from '../home/homeShared';
 
 export interface BroadcastItem {
@@ -17,13 +19,47 @@ interface Props {
   onMarkRead?: (id: string) => void;
 }
 
+const createStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    section: { gap: 10, marginBottom: 24 },
+    sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+    sectionTitle: { fontSize: 15, fontWeight: '800', color: c.textPrimary },
+    card: {
+      backgroundColor: c.card,
+      borderRadius: 12,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: c.border,
+      gap: 6,
+    },
+    cardUnread: {
+      borderColor: c.warning,
+      backgroundColor: c.warningSurface,
+    },
+    cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    badge: {
+      backgroundColor: c.warning,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 4,
+    },
+    badgeText: { fontSize: 10, fontWeight: '800', color: c.dark, letterSpacing: 0.5 },
+    time: { fontSize: 12, color: c.textSecondary },
+    title: { fontSize: 16, fontWeight: '800', color: c.textPrimary },
+    message: { fontSize: 14, color: c.textSecondary, lineHeight: 20 },
+    hint: { fontSize: 11, color: c.chevron, fontStyle: 'italic', marginTop: 4 },
+  });
+
 export default function BroadcastNotificationView({ broadcasts, onMarkRead }: Props) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   if (!broadcasts.length) return null;
 
   return (
     <View style={styles.section}>
       <View style={styles.sectionHead}>
-        <Ionicons name="megaphone" size={18} color={Colors.warning} />
+        <Ionicons name="megaphone" size={18} color={colors.warning} />
         <Text style={styles.sectionTitle}>Admin broadcasts</Text>
       </View>
       {broadcasts.map((b) => (
@@ -47,33 +83,3 @@ export default function BroadcastNotificationView({ broadcasts, onMarkRead }: Pr
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  section: { gap: 10, marginBottom: 24 },
-  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  sectionTitle: { fontSize: 15, fontWeight: '800', color: Colors.textPrimary },
-  card: {
-    backgroundColor: Colors.card,
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 6,
-  },
-  cardUnread: {
-    borderColor: Colors.warning,
-    backgroundColor: '#FFFBEB',
-  },
-  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  badge: {
-    backgroundColor: Colors.warning,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-  },
-  badgeText: { fontSize: 10, fontWeight: '800', color: '#0F172A', letterSpacing: 0.5 },
-  time: { fontSize: 12, color: Colors.textSecondary },
-  title: { fontSize: 16, fontWeight: '800', color: Colors.textPrimary },
-  message: { fontSize: 14, color: Colors.textSecondary, lineHeight: 20 },
-  hint: { fontSize: 11, color: '#94A3B8', fontStyle: 'italic', marginTop: 4 },
-});

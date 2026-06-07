@@ -3,11 +3,9 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  StatusBar,
   Linking,
   Alert,
 } from 'react-native';
@@ -16,10 +14,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Colors } from '../../constants/colors';
+import type { ThemeColors } from '../../constants/themes';
 import { STATUS_LABELS, SEVERITY_LABELS } from '../../constants/disasterUi';
 import { DISASTER_TYPE_OPTIONS } from '../../types/profile';
-import { disasterStyles } from './disasterStyles';
+import { useDisasterStyles } from './disasterStyles';
 import {
   getDisasterById,
   getDisasterMedia,
@@ -30,6 +28,8 @@ import { getVolunteerProfile } from '../../services/profileService';
 import { useToastStore } from '../../store/toastStore';
 import type { DisasterMediaRow, DisasterRow, DisasterUpdateRow } from '../../types/disaster';
 import { createTask } from '../../services/taskService';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
 
 const TASK_TYPES = [
   { key: 'search_rescue', label: 'Search & Rescue' },
@@ -38,7 +38,74 @@ const TASK_TYPES = [
   { key: 'logistics_support', label: 'Logistics Support' },
 ];
 
+const createStyles = (c: ThemeColors) => ({
+  center: { alignItems: 'center' as const, justifyContent: 'center' as const, flex: 1 },
+  muted: { color: c.textSecondary },
+  link: { color: c.primary, fontWeight: '700' as const },
+
+  tag: {
+    alignSelf: 'flex-start' as const,
+    backgroundColor: c.primarySurface,
+    color: c.primary,
+    fontWeight: '700' as const,
+    fontSize: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    overflow: 'hidden' as const,
+  },
+  h1: { fontSize: 22, fontWeight: '800' as const, color: c.textPrimary },
+  mapLink: { fontSize: 14, fontWeight: '600' as const, color: c.primary, marginTop: 4 },
+
+  section: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: c.textSecondary,
+    marginBottom: 8,
+    marginTop: 6,
+  },
+  body: { fontSize: 15, color: c.textPrimary, lineHeight: 22 },
+
+  photo: {
+    width: 140,
+    height: 100,
+    borderRadius: 12,
+    marginRight: 10,
+    backgroundColor: c.skeleton,
+  },
+  videoPh: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: c.dark,
+  },
+
+  rowBtns: { flexDirection: 'row' as const, gap: 10, marginTop: 8, marginBottom: 8, flexWrap: 'wrap' as const },
+
+  timelineHead: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    marginTop: 8,
+  },
+  seeAll: { fontSize: 13, fontWeight: '700' as const, color: c.primary },
+
+  upRow: { flexDirection: 'row' as const, gap: 10, marginBottom: 14 },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: c.primary,
+    marginTop: 6,
+  },
+  upBody: { fontSize: 14, color: c.textPrimary, lineHeight: 20 },
+  upTime: { fontSize: 11, color: c.textSecondary, marginTop: 4 },
+});
+
 export default function DisasterDetailScreen() {
+  const disasterStyles = useDisasterStyles();
+  const styles = useThemedStyles(createStyles);
+  const { colors, primaryGradient } = useTheme();
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const profile = useAuthStore((s) => s.profile);
   const user = useAuthStore((s) => s.user);
@@ -127,7 +194,7 @@ export default function DisasterDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={[disasterStyles.screenBg, styles.center]} edges={['top']}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </SafeAreaView>
     );
   }
@@ -145,11 +212,9 @@ export default function DisasterDetailScreen() {
 
   return (
     <SafeAreaView style={disasterStyles.screenBgWhite} edges={['top']}>
-      <StatusBar barStyle="dark-content" />
-
       <View style={disasterStyles.headerRow}>
         <TouchableOpacity onPress={() => router.back()} style={disasterStyles.backBtn}>
-          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
+          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={disasterStyles.headerTitle}>Disaster detail</Text>
       </View>
@@ -160,7 +225,7 @@ export default function DisasterDetailScreen() {
           <Text style={styles.h1}>{SEVERITY_LABELS[disaster.severity]} severity</Text>
           <Text style={disasterStyles.muted}>
             Status:{' '}
-            <Text style={{ fontWeight: '700', color: Colors.textPrimary }}>
+            <Text style={{ fontWeight: '700', color: colors.textPrimary }}>
               {STATUS_LABELS[disaster.status] ?? disaster.status}
             </Text>
           </Text>
@@ -172,7 +237,7 @@ export default function DisasterDetailScreen() {
             }
           >
             <Text style={styles.mapLink}>
-              <Ionicons name="location-outline" size={16} color={Colors.primary} />{' '}
+              <Ionicons name="location-outline" size={16} color={colors.primary} />{' '}
               {disaster.location_label ??
                 `${disaster.latitude.toFixed(4)}, ${disaster.longitude.toFixed(4)}`}
             </Text>
@@ -193,7 +258,7 @@ export default function DisasterDetailScreen() {
                   <Image key={m.id} source={{ uri: m.public_url ?? m.file_url }} style={styles.photo} />
                 ) : (
                   <View key={m.id} style={[styles.photo, styles.videoPh]}>
-                    <Ionicons name="videocam" size={32} color="#FFFFFF" />
+                    <Ionicons name="videocam" size={32} color={colors.onPrimary} />
                   </View>
                 ),
               )}
@@ -204,7 +269,7 @@ export default function DisasterDetailScreen() {
         <View style={styles.rowBtns}>
           {profile?.role === 'citizen' ? (
             <TouchableOpacity style={[disasterStyles.primaryBtn, { flex: 1 }]} onPress={requestHelp}>
-              <LinearGradient colors={['#2563EB', '#1D4ED8']} style={disasterStyles.primaryBtnGradientWrap}>
+              <LinearGradient colors={primaryGradient} style={disasterStyles.primaryBtnGradientWrap}>
                 <Text style={disasterStyles.primaryBtnText}>Request help</Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -215,7 +280,7 @@ export default function DisasterDetailScreen() {
               style={[disasterStyles.outlineBtn, { flex: 1 }]}
               onPress={() => router.push(`/(main)/disasters/verify/${disaster.id}`)}
             >
-              <Ionicons name="shield-checkmark-outline" size={18} color={Colors.primary} />
+              <Ionicons name="shield-checkmark-outline" size={18} color={colors.primary} />
               <Text style={disasterStyles.outlineBtnText}>Verify disaster</Text>
             </TouchableOpacity>
           ) : null}
@@ -225,7 +290,7 @@ export default function DisasterDetailScreen() {
               onPress={openCreateTaskPicker}
               disabled={creatingTask}
             >
-              <Ionicons name="add-circle-outline" size={18} color={Colors.primary} />
+              <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
               <Text style={disasterStyles.outlineBtnText}>
                 {creatingTask ? 'Creating...' : 'Create task'}
               </Text>
@@ -259,66 +324,3 @@ export default function DisasterDetailScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  center: { alignItems: 'center', justifyContent: 'center', flex: 1 },
-  muted: { color: Colors.textSecondary },
-  link: { color: Colors.primary, fontWeight: '700' },
-
-  tag: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#EFF6FF',
-    color: Colors.primary,
-    fontWeight: '700',
-    fontSize: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  h1: { fontSize: 22, fontWeight: '800', color: Colors.textPrimary },
-  mapLink: { fontSize: 14, fontWeight: '600', color: Colors.primary, marginTop: 4 },
-
-  section: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-    marginBottom: 8,
-    marginTop: 6,
-  },
-  body: { fontSize: 15, color: Colors.textPrimary, lineHeight: 22 },
-
-  photo: {
-    width: 140,
-    height: 100,
-    borderRadius: 12,
-    marginRight: 10,
-    backgroundColor: '#E2E8F0',
-  },
-  videoPh: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#0F172A',
-  },
-
-  rowBtns: { flexDirection: 'row', gap: 10, marginTop: 8, marginBottom: 8, flexWrap: 'wrap' },
-
-  timelineHead: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  seeAll: { fontSize: 13, fontWeight: '700', color: Colors.primary },
-
-  upRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.primary,
-    marginTop: 6,
-  },
-  upBody: { fontSize: 14, color: Colors.textPrimary, lineHeight: 20 },
-  upTime: { fontSize: 11, color: Colors.textSecondary, marginTop: 4 },
-});

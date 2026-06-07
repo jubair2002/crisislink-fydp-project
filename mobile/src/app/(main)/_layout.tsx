@@ -1,10 +1,11 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
 import { useAuthStore } from '../../store/authStore';
 
 export default function MainLayout() {
+  const { colors } = useTheme();
   const role = useAuthStore((s) => s.profile?.role);
   const isVolunteer = role === 'volunteer';
 
@@ -12,11 +13,11 @@ export default function MainLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: '#94A3B8',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.chevron,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopColor: '#E2E8F0',
+          backgroundColor: colors.tabBar,
+          borderTopColor: colors.tabBarBorder,
           height: 60,
           paddingBottom: 8,
         },

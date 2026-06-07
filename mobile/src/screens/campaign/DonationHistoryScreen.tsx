@@ -7,14 +7,15 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { copyText } from '../../utils/copyText';
 
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { HeaderGlassCircleButton } from '../../components/HeaderGlassCircleButton';
 import { useAuthStore } from '../../store/authStore';
 import { useToastStore } from '../../store/toastStore';
@@ -54,6 +55,8 @@ function mergeHistory(local: SavedDonation[], server: SavedDonation[]): HistoryI
 }
 
 export default function DonationHistoryScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const user = useAuthStore((s) => s.user);
   const showToast = useToastStore((s) => s.show);
   const [items, setItems] = useState<HistoryItem[]>([]);
@@ -110,10 +113,9 @@ export default function DonationHistoryScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="dark-content" />
       <View style={styles.header}>
         <HeaderGlassCircleButton onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />
+          <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
         </HeaderGlassCircleButton>
         <Text style={styles.headerTitle}>Donation History</Text>
         <View style={{ width: 44 }} />
@@ -123,7 +125,7 @@ export default function DonationHistoryScreen() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <FlatList
@@ -133,7 +135,7 @@ export default function DonationHistoryScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
             <View style={styles.center}>
-              <Ionicons name="receipt-outline" size={48} color="#CBD5E1" />
+              <Ionicons name="receipt-outline" size={48} color={colors.iconMuted} />
               <Text style={styles.emptyTitle}>No donations yet</Text>
               <Text style={styles.emptySub}>
                 Your tracking IDs appear here after you donate.
@@ -187,7 +189,7 @@ export default function DonationHistoryScreen() {
                   <Ionicons
                     name={copiedCode === item.donation_code ? 'checkmark' : 'copy-outline'}
                     size={20}
-                    color={Colors.primary}
+                    color={colors.primary}
                   />
                 </TouchableOpacity>
               </View>
@@ -199,8 +201,8 @@ export default function DonationHistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const createStyles = (c: ThemeColors, _isDark: boolean) => ({
+  container: { flex: 1, backgroundColor: c.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -208,41 +210,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: c.textPrimary },
   hint: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: c.textSecondary,
     paddingHorizontal: 16,
     marginBottom: 8,
   },
   list: { padding: 16, paddingBottom: 32, gap: 12 },
   card: {
-    backgroundColor: Colors.card,
+    backgroundColor: c.card,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: c.border,
     marginBottom: 12,
   },
   cardTop: { flexDirection: 'row', marginBottom: 12 },
-  campaignTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
-  amount: { fontSize: 18, fontWeight: '800', color: Colors.primary, marginTop: 4 },
-  date: { fontSize: 12, color: Colors.textSecondary, marginTop: 4 },
+  campaignTitle: { fontSize: 16, fontWeight: '700', color: c.textPrimary },
+  amount: { fontSize: 18, fontWeight: '800', color: c.primary, marginTop: 4 },
+  date: { fontSize: 12, color: c.textSecondary, marginTop: 4 },
   codeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: c.muted,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: c.border,
     overflow: 'hidden',
   },
   codeTap: { flex: 1, padding: 12 },
-  codeLabel: { fontSize: 11, fontWeight: '600', color: Colors.textSecondary },
+  codeLabel: { fontSize: 11, fontWeight: '600', color: c.textSecondary },
   code: {
     fontSize: 15,
     fontWeight: '800',
-    color: Colors.primary,
+    color: c.primary,
     marginTop: 4,
     letterSpacing: 0.5,
   },
@@ -250,17 +252,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 18,
     borderLeftWidth: 1,
-    borderLeftColor: '#E2E8F0',
+    borderLeftColor: c.border,
   },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 8 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
-  emptySub: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center' },
+  emptyTitle: { fontSize: 17, fontWeight: '700', color: c.textPrimary },
+  emptySub: { fontSize: 14, color: c.textSecondary, textAlign: 'center' },
   emptyBtn: {
     marginTop: 12,
-    backgroundColor: Colors.primary,
+    backgroundColor: c.primary,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 12,
   },
-  emptyBtnText: { color: '#FFF', fontWeight: '700' },
+  emptyBtnText: { color: c.onPrimary, fontWeight: '700' },
 });

@@ -123,6 +123,25 @@ export async function showChatNotification(
   }
 }
 
+export async function showReportUpdateNotification(title: string, message: string): Promise<void> {
+  const Notifications = await loadNotifications();
+  if (!Notifications) return;
+
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body: message,
+        data: { type: 'report_updated' },
+        sound: true,
+      },
+      trigger: null,
+    });
+  } catch {
+    /* Expo Go limitations */
+  }
+}
+
 export async function showBroadcastNotification(title: string, message: string): Promise<void> {
   const Notifications = await loadNotifications();
   if (!Notifications) return;
@@ -153,6 +172,10 @@ export function setupNotificationNavigation(): () => void {
       const data = response.notification.request.content.data;
       if (data?.type === 'broadcast') {
         router.push('/(main)/notifications');
+        return;
+      }
+      if (data?.type === 'report_updated') {
+        router.push('/(main)/report/history');
         return;
       }
       const chatId = data?.chatId;

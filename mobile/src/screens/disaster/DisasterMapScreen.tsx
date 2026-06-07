@@ -2,11 +2,9 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
-  StatusBar,
   Platform,
   FlatList,
 } from 'react-native';
@@ -17,14 +15,17 @@ import { router } from 'expo-router';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Colors } from '../../constants/colors';
+import { MAP_DARK_STYLE } from '../../constants/themes';
+import type { ThemeColors } from '../../constants/themes';
 import { SEVERITY_MARKER_COLORS } from '../../constants/disasterUi';
 import { DISASTER_TYPE_OPTIONS } from '../../types/profile';
-import { disasterStyles } from './disasterStyles';
+import { useDisasterStyles } from './disasterStyles';
 import { getAllDisasters, haversineMeters, subscribeDisastersRealtime } from '../../services/disasterService';
 import { useDisasterStore } from '../../store/disasterStore';
 import { useToastStore } from '../../store/toastStore';
 import { useAuthStore } from '../../store/authStore';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
 import type { DisasterSeverity } from '../../types/disaster';
 
 const NEARBY_TOAST_KM = 45;
@@ -36,7 +37,118 @@ const SEVERITY_OPTIONS: { value: DisasterSeverity; label: string }[] = [
   { value: 'critical', label: 'Crit' },
 ];
 
+const createStyles = (c: ThemeColors, isDark: boolean) => ({
+  topBar: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 20,
+    paddingBottom: 6,
+    gap: 12,
+  },
+  screenTitle: { flex: 1, fontSize: 22, fontWeight: '800' as const, color: c.textPrimary, letterSpacing: -0.4 },
+  iconBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: c.muted,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  modeSwitch: {
+    flexDirection: 'row' as const,
+    backgroundColor: c.card,
+    borderWidth: 1,
+    borderColor: c.border,
+    borderRadius: 12,
+    padding: 2,
+  },
+  modeBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 9,
+  },
+  modeBtnOn: {
+    backgroundColor: c.primarySurface,
+  },
+  modeText: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    color: c.textSecondary,
+  },
+  modeTextOn: {
+    color: c.primary,
+  },
+  chips: { paddingHorizontal: 16, gap: 8, alignItems: 'center' as const },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: c.border,
+    backgroundColor: c.card,
+  },
+  chipOn: { borderColor: c.primary, backgroundColor: c.primarySurface },
+  chipText: { fontSize: 12, fontWeight: '700' as const, color: c.textSecondary },
+  chipTextOn: { color: c.primary },
+
+  mapWrap: { flex: 1, marginHorizontal: 16, marginBottom: 12, borderRadius: 16, overflow: 'hidden' as const },
+  listWrap: { flex: 1, marginBottom: 12 },
+  map: { flex: 1 },
+  loadingOverlay: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: isDark ? 'rgba(11,18,32,0.75)' : 'rgba(248,250,252,0.65)',
+    zIndex: 2,
+  },
+  reportCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: c.border,
+    backgroundColor: c.card,
+    padding: 12,
+    gap: 6,
+  },
+  reportTopRow: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'space-between' as const, gap: 8 },
+  reportType: { fontSize: 14, fontWeight: '800' as const, color: c.textPrimary, textTransform: 'capitalize' as const },
+  reportMeta: { fontSize: 12, color: c.textSecondary },
+  reportBody: { fontSize: 13, color: c.textPrimary, lineHeight: 18 },
+  statusPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
+  reportedPill: { backgroundColor: c.warningSurface },
+  verifiedPill: { backgroundColor: c.successSurface },
+  statusPillText: { fontSize: 11, fontWeight: '700' as const, color: c.textPrimary, textTransform: 'capitalize' as const },
+  emptyText: { textAlign: 'center' as const, marginTop: 40, color: c.textSecondary },
+
+  fab: {
+    position: 'absolute' as const,
+    right: 14,
+    bottom: 14,
+    borderRadius: 28,
+    overflow: 'hidden' as const,
+    elevation: 8,
+    shadowColor: c.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    zIndex: 3,
+  },
+  fabGrad: {
+    width: 56,
+    height: 56,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+});
+
 export default function DisasterMapScreen() {
+  const disasterStyles = useDisasterStyles();
+  const styles = useThemedStyles(createStyles);
+  const { colors, isDark, primaryGradient } = useTheme();
+
   const filters = useDisasterStore((s) => s.filters);
   const disasters = useDisasterStore((s) => s.disasters);
   const setDisasters = useDisasterStore((s) => s.setDisasters);
@@ -157,8 +269,6 @@ export default function DisasterMapScreen() {
 
   return (
     <SafeAreaView style={disasterStyles.screenBg} edges={['top']}>
-      <StatusBar barStyle="dark-content" />
-
       <View style={styles.topBar}>
         <Text style={styles.screenTitle}>Live map</Text>
         <View style={styles.modeSwitch}>
@@ -176,7 +286,7 @@ export default function DisasterMapScreen() {
           </TouchableOpacity>
         </View>
         <TouchableOpacity onPress={() => void load()} style={styles.iconBtn}>
-          <Ionicons name="refresh" size={18} color={Colors.primary} />
+          <Ionicons name="refresh" size={18} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -230,7 +340,7 @@ export default function DisasterMapScreen() {
         <View style={styles.mapWrap}>
           {isLoading && (
             <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color={Colors.primary} />
+              <ActivityIndicator size="large" color={colors.primary} />
             </View>
           )}
           <MapView
@@ -238,6 +348,7 @@ export default function DisasterMapScreen() {
             provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
             initialRegion={initialRegion}
             showsUserLocation
+            customMapStyle={isDark ? MAP_DARK_STYLE : undefined}
           >
             {filtered.map((d) => (
               <Marker
@@ -255,8 +366,8 @@ export default function DisasterMapScreen() {
             activeOpacity={0.9}
             onPress={() => router.push('/(main)/disasters/report')}
           >
-            <LinearGradient colors={['#2563EB', '#1D4ED8']} style={styles.fabGrad}>
-              <Ionicons name="add" size={28} color="#FFFFFF" />
+            <LinearGradient colors={primaryGradient} style={styles.fabGrad}>
+              <Ionicons name="add" size={28} color={colors.onPrimary} />
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -264,7 +375,7 @@ export default function DisasterMapScreen() {
         <View style={styles.listWrap}>
           {isLoading ? (
             <View style={styles.loadingOverlay}>
-              <ActivityIndicator size="large" color={Colors.primary} />
+              <ActivityIndicator size="large" color={colors.primary} />
             </View>
           ) : (
             <FlatList
@@ -296,107 +407,3 @@ export default function DisasterMapScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 6,
-    gap: 12,
-  },
-  screenTitle: { flex: 1, fontSize: 22, fontWeight: '800', color: Colors.textPrimary, letterSpacing: -0.4 },
-  iconBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modeSwitch: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    padding: 2,
-  },
-  modeBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 9,
-  },
-  modeBtnOn: {
-    backgroundColor: '#EFF6FF',
-  },
-  modeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-  },
-  modeTextOn: {
-    color: Colors.primary,
-  },
-  chips: { paddingHorizontal: 16, gap: 8, alignItems: 'center' },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-  },
-  chipOn: { borderColor: Colors.primary, backgroundColor: '#EFF6FF' },
-  chipText: { fontSize: 12, fontWeight: '700', color: Colors.textSecondary },
-  chipTextOn: { color: Colors.primary },
-
-  mapWrap: { flex: 1, marginHorizontal: 16, marginBottom: 12, borderRadius: 16, overflow: 'hidden' },
-  listWrap: { flex: 1, marginBottom: 12 },
-  map: { flex: 1 },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(248,250,252,0.65)',
-    zIndex: 2,
-  },
-  reportCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-    padding: 12,
-    gap: 6,
-  },
-  reportTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  reportType: { fontSize: 14, fontWeight: '800', color: Colors.textPrimary, textTransform: 'capitalize' },
-  reportMeta: { fontSize: 12, color: Colors.textSecondary },
-  reportBody: { fontSize: 13, color: Colors.textPrimary, lineHeight: 18 },
-  statusPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
-  reportedPill: { backgroundColor: '#FEF3C7' },
-  verifiedPill: { backgroundColor: '#DCFCE7' },
-  statusPillText: { fontSize: 11, fontWeight: '700', color: Colors.textPrimary, textTransform: 'capitalize' },
-  emptyText: { textAlign: 'center', marginTop: 40, color: Colors.textSecondary },
-
-  fab: {
-    position: 'absolute',
-    right: 14,
-    bottom: 14,
-    borderRadius: 28,
-    overflow: 'hidden',
-    elevation: 8,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    zIndex: 3,
-  },
-  fabGrad: {
-    width: 56,
-    height: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-});

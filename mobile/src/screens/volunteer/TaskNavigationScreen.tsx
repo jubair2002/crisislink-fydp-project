@@ -5,7 +5,9 @@ import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { MAP_DARK_STYLE, type ThemeColors } from '../../constants/themes';
 import { startTask } from '../../services/taskService';
 
 interface TaskNavigationScreenProps {
@@ -25,7 +27,45 @@ const distanceKm = (aLat: number, aLng: number, bLat: number, bLng: number): num
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
 };
 
+const createStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.background },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    header: { paddingHorizontal: 16, paddingTop: 10, gap: 8 },
+    headerTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    title: { flex: 1, fontSize: 22, fontWeight: '800', color: c.textPrimary },
+    sub: { color: c.textSecondary },
+    iconBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: c.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    mapWrap: {
+      flex: 1,
+      margin: 16,
+      borderRadius: 14,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    map: { flex: 1 },
+    arrivalBtn: {
+      marginHorizontal: 16,
+      marginBottom: 20,
+      borderRadius: 10,
+      backgroundColor: c.success,
+      paddingVertical: 12,
+      alignItems: 'center',
+    },
+    arrivalText: { color: c.onPrimary, fontWeight: '800' },
+  });
+
 export default function TaskNavigationScreen({ taskId, destination, onBack }: TaskNavigationScreenProps) {
+  const { colors, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [loading, setLoading] = useState(true);
   const [userCoord, setUserCoord] = useState<{ latitude: number; longitude: number } | null>(null);
   const [arrived, setArrived] = useState(false);
@@ -81,7 +121,7 @@ export default function TaskNavigationScreen({ taskId, destination, onBack }: Ta
     return (
       <SafeAreaView style={styles.root} edges={['top']}>
         <View style={styles.center}>
-          <ActivityIndicator color={Colors.primary} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -92,11 +132,11 @@ export default function TaskNavigationScreen({ taskId, destination, onBack }: Ta
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <TouchableOpacity style={styles.iconBtn} onPress={() => (onBack ? onBack() : router.back())}>
-            <Ionicons name="chevron-back" size={20} color={Colors.textPrimary} />
+            <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.title}>Task Navigation</Text>
           <TouchableOpacity style={styles.iconBtn} onPress={() => setRefreshTick((x) => x + 1)}>
-            <Ionicons name="refresh" size={18} color={Colors.primary} />
+            <Ionicons name="refresh" size={18} color={colors.primary} />
           </TouchableOpacity>
         </View>
         <Text style={styles.sub}>Distance: {distKm === null ? 'Unknown' : `${distKm.toFixed(2)} km`}</Text>
@@ -104,6 +144,7 @@ export default function TaskNavigationScreen({ taskId, destination, onBack }: Ta
       <View style={styles.mapWrap}>
         <MapView
           style={styles.map}
+          customMapStyle={isDark ? MAP_DARK_STYLE : undefined}
           initialRegion={{
             latitude: userCoord?.latitude ?? destination.latitude,
             longitude: userCoord?.longitude ?? destination.longitude,
@@ -113,7 +154,9 @@ export default function TaskNavigationScreen({ taskId, destination, onBack }: Ta
           showsUserLocation
         >
           <Marker coordinate={destination} title="Task location" />
-          {userCoord && <Polyline coordinates={[userCoord, destination]} strokeColor={Colors.primary} strokeWidth={3} />}
+          {userCoord && (
+            <Polyline coordinates={[userCoord, destination]} strokeColor={colors.primary} strokeWidth={3} />
+          )}
         </MapView>
       </View>
       <TouchableOpacity style={styles.arrivalBtn} onPress={onArrive} disabled={arrived}>
@@ -122,38 +165,3 @@ export default function TaskNavigationScreen({ taskId, destination, onBack }: Ta
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: { paddingHorizontal: 16, paddingTop: 10, gap: 8 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  title: { flex: 1, fontSize: 22, fontWeight: '800', color: Colors.textPrimary },
-  sub: { color: Colors.textSecondary },
-  iconBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  mapWrap: {
-    flex: 1,
-    margin: 16,
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  map: { flex: 1 },
-  arrivalBtn: {
-    marginHorizontal: 16,
-    marginBottom: 20,
-    borderRadius: 10,
-    backgroundColor: Colors.success,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  arrivalText: { color: '#FFFFFF', fontWeight: '800' },
-});

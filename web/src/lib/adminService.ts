@@ -31,6 +31,13 @@ import type {
   BroadcastAdminRow,
   BroadcastTargetType,
   ChatMonitorRow,
+  ReportDetailPayload,
+  ReportFilters,
+  ReportListRow,
+  ReportResponseRow,
+  ReportStatus,
+  ReportStatusEventRow,
+  ReportType,
 } from '@/types/admin';
 
 const DEFAULT_PAGE_SIZE = 20;
@@ -1603,4 +1610,170 @@ export async function deleteAdminBroadcast(adminId: string, broadcastId: string)
   await logAction(adminId, 'delete_broadcast', 'broadcast', broadcastId, {
     title: existing.title,
   });
+}
+
+function toReportRow(row: Record<string, unknown>): ReportListRow {
+  return {
+    id: String(row.id),
+    user_id: String(row.user_id),
+    report_type: String(row.report_type ?? 'feedback') as ReportType,
+    description: String(row.description ?? ''),
+    image_url: (row.image_url as string) ?? null,
+    campaign_id: row.campaign_id != null ? String(row.campaign_id) : null,
+    latitude: row.latitude != null ? Number(row.latitude) : null,
+    longitude: row.longitude != null ? Number(row.longitude) : null,
+    location_label: (row.location_label as string) ?? null,
+    status: String(row.status ?? 'submitted') as ReportStatus,
+    resolution_message: (row.resolution_message as string) ?? null,
+    created_at: String(row.created_at ?? new Date().toISOString()),
+    updated_at: String(row.updated_at ?? new Date().toISOString()),
+  };
+}
+
+export async function getReports(filters: ReportFilters): Promise<ReportListRow[]> {
+  const supabase = db();
+  let q = supabase.from('reports').select('*');
+
+  if (filters.report_type) q = q.eq('report_type', filters.report_type);
+  if (filters.status) q = q.eq('status', filters.status);
+  if (filters.dateFrom) q = q.gte('created_at', `${filters.dateFrom}T00:00:00.000Z`);
+  if (filters.dateTo) q = q.lte('created_at', `${filters.dateTo}T23:59:59.999Z`);
+  if (filters.search?.trim()) q = q.ilike('description', `%${filters.search.trim()}%`);
+
+  const sortBy = filters.sortBy ?? 'created_at';
+  const ascending = filters.sortDir === 'asc';
+  q = q.order(sortBy, { ascending });
+
+  const { data, error } = await q.limit(500);
+  if (error) throw unwrapAdminError(new Error(error.message));
+
+  const rows = ((data ?? []) as Record<string, unknown>[]).map(toReportRow);
+  if (!rows.length) return [];
+
+  const userIds = rows.map((r) => r.user_id);
+  const campaignIds = [...new Set(rows.map((r) => r.campaign_id).filter(Boolean))] as string[];
+
+  const profileMap = await getProfilesMapByUserIds(userIds);
+
+  const campaignMap = new Map<string, { id: string; title: string }>();
+  if (campaignIds.length) {
+    const { data: campaigns } = await supabase
+      .from('campaigns')
+      .select('id, title')
+      .in('id', campaignIds);
+    for (const c of campaigns ?? []) {
+      if (c.id) campaignMap.set(String(c.id), { id: String(c.id), title: String(c.title ?? 'Campaign') });
+    }
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    reporter: profileMap.get(row.user_id) ?? null,
+    campaign: row.campaign_id ? (campaignMap.get(row.campaign_id) ?? null) : null,
+  }));
+}
+
+export async function getReportDetailPayload(id: string): Promise<ReportDetailPayload | null> {
+  const supabase = db();
+  const { data, error } = await supabase.from('reports').select('*').eq('id', id).maybeSingle();
+  if (error) throw unwrapAdminError(new Error(error.message));
+  if (!data) return null;
+
+  const report = toReportRow(data as Record<string, unknown>);
+  const profileMap = await getProfilesMapByUserIds([report.user_id]);
+
+  if (report.campaign_id) {
+    const { data: camp } = await supabase
+      .from('campaigns')
+      .select('id, title')
+      .eq('id', report.campaign_id)
+      .maybeSingle();
+    if (camp?.id) {
+      report.campaign = { id: String(camp.id), title: String(camp.title ?? 'Campaign') };
+    }
+  }
+  report.reporter = profileMap.get(report.user_id) ?? null;
+
+  const [responsesRes, eventsRes] = await Promise.all([
+    supabase
+      .from('report_responses')
+      .select('*')
+      .eq('report_id', id)
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('report_status_events')
+      .select('*')
+      .eq('report_id', id)
+      .order('created_at', { ascending: true }),
+  ]);
+
+  if (responsesRes.error) throw unwrapAdminError(new Error(responsesRes.error.message));
+  if (eventsRes.error) throw unwrapAdminError(new Error(eventsRes.error.message));
+
+  const responderIds = (responsesRes.data ?? []).map((r) => String(r.responder_user_id));
+  const responderMap = await getProfilesMapByUserIds(responderIds);
+
+  const responses: ReportResponseRow[] = (responsesRes.data ?? []).map((row) => ({
+    id: String(row.id),
+    report_id: String(row.report_id),
+    responder_user_id: String(row.responder_user_id),
+    message: String(row.message ?? ''),
+    created_at: String(row.created_at ?? new Date().toISOString()),
+    responder: responderMap.get(String(row.responder_user_id)) ?? null,
+  }));
+
+  const statusEvents: ReportStatusEventRow[] = (eventsRes.data ?? []).map((row) => ({
+    id: String(row.id),
+    report_id: String(row.report_id),
+    status: String(row.status ?? ''),
+    note: (row.note as string) ?? null,
+    created_by: row.created_by != null ? String(row.created_by) : null,
+    created_at: String(row.created_at ?? new Date().toISOString()),
+  }));
+
+  return { report, responses, statusEvents };
+}
+
+export async function updateReportStatusByAdmin(
+  adminId: string,
+  reportId: string,
+  status: ReportStatus,
+  resolutionMessage?: string | null,
+): Promise<void> {
+  const supabase = db();
+  const patch: Record<string, unknown> = { status };
+  if (resolutionMessage != null) patch.resolution_message = resolutionMessage;
+
+  const { error } = await supabase.from('reports').update(patch).eq('id', reportId);
+  if (error) throw unwrapAdminError(new Error(error.message));
+
+  await logAction(adminId, `report_${status}`, 'report', reportId, {
+    resolution_message: resolutionMessage ?? null,
+  });
+}
+
+export async function addReportResponseByAdmin(
+  adminId: string,
+  reportId: string,
+  message: string,
+): Promise<void> {
+  const supabase = db();
+  const { error: insertErr } = await supabase.from('report_responses').insert({
+    report_id: reportId,
+    responder_user_id: adminId,
+    message: message.trim(),
+  });
+  if (insertErr) throw unwrapAdminError(new Error(insertErr.message));
+
+  const { data: report } = await supabase
+    .from('reports')
+    .select('status')
+    .eq('id', reportId)
+    .maybeSingle();
+
+  if (report?.status === 'submitted') {
+    await supabase.from('reports').update({ status: 'in_review' }).eq('id', reportId);
+  }
+
+  await logAction(adminId, 'report_response_added', 'report', reportId);
 }

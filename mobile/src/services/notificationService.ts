@@ -1,7 +1,7 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { AppState } from 'react-native';
 import { supabase } from './supabaseClient';
-import { showBroadcastNotification } from './pushNotificationService';
+import { showBroadcastNotification, showReportUpdateNotification } from './pushNotificationService';
 import { useToastStore } from '../store/toastStore';
 
 export interface UserNotificationRow {
@@ -120,6 +120,11 @@ export function startNotificationListener(userId: string): () => void {
     if (n.type === 'broadcast') {
       void showBroadcastNotification(n.title, n.message);
       useToastStore.getState().show(`Broadcast: ${n.title}`);
+    } else if (n.type === 'report_updated') {
+      void showReportUpdateNotification(n.title, n.message);
+      useToastStore.getState().show('Your report has been updated');
+    } else if (n.type === 'campaign_report') {
+      useToastStore.getState().show('New campaign issue reported');
     }
   });
 

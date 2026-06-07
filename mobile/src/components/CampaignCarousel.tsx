@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   Dimensions,
@@ -13,7 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { Colors } from '../constants/colors';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../hooks/useThemedStyles';
 import { CampaignCoverImage } from './CampaignCoverImage';
 import type { CampaignRow } from '../types/home';
 
@@ -25,6 +25,59 @@ const AUTO_INTERVAL_MS = 5000;
 const MAX_SLIDES = 5;
 
 function CampaignCarouselSlide({ item }: { item: CampaignRow }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles((c) => ({
+    slideCard: {
+      overflow: 'hidden',
+      backgroundColor: c.primarySurface,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    slideGradient: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      justifyContent: 'flex-end',
+    },
+    slideContent: {
+      paddingHorizontal: 16,
+      paddingBottom: 16,
+      paddingTop: 40,
+    },
+    slideTitle: { fontSize: 18, fontWeight: '800', color: c.white },
+    slideMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+    slideLoc: { fontSize: 13, color: c.chevron, flex: 1 },
+    slideProgressBg: {
+      height: 5,
+      borderRadius: 3,
+      backgroundColor: 'rgba(255,255,255,0.25)',
+      marginTop: 12,
+      overflow: 'hidden',
+    },
+    slideProgressFg: { height: '100%', backgroundColor: c.white, borderRadius: 3 },
+    slideBottomRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 10,
+      gap: 8,
+    },
+    slideAmt: { fontSize: 12, color: c.white, fontWeight: '600', flex: 1, opacity: 0.9 },
+    slideCta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: c.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+    },
+    slideCtaText: { fontSize: 13, fontWeight: '700', color: c.onPrimary },
+  }));
+
   const target = Math.max(1, item.target_amount || 1);
   const pct = Math.min(100, Math.round(((item.collected_amount || 0) / target) * 100));
 
@@ -36,7 +89,7 @@ function CampaignCarouselSlide({ item }: { item: CampaignRow }) {
     >
       <CampaignCoverImage uri={item.media_url} height={CAMPAIGN_SLIDE_H} rounded={16} />
       <LinearGradient
-        colors={['transparent', 'rgba(15,23,42,0.55)', 'rgba(15,23,42,0.92)']}
+        colors={['transparent', colors.overlay, 'rgba(15,23,42,0.92)']}
         style={styles.slideGradient}
       >
         <View style={styles.slideContent}>
@@ -44,7 +97,7 @@ function CampaignCarouselSlide({ item }: { item: CampaignRow }) {
             {item.title}
           </Text>
           <View style={styles.slideMetaRow}>
-            <Ionicons name="location-outline" size={13} color="#E2E8F0" />
+            <Ionicons name="location-outline" size={13} color={colors.chevron} />
             <Text style={styles.slideLoc} numberOfLines={1}>
               {item.location ?? 'Nationwide'}
             </Text>
@@ -60,7 +113,7 @@ function CampaignCarouselSlide({ item }: { item: CampaignRow }) {
             </Text>
             <View style={styles.slideCta}>
               <Text style={styles.slideCtaText}>Donate</Text>
-              <Ionicons name="chevron-forward" size={14} color="#FFF" />
+              <Ionicons name="chevron-forward" size={14} color={colors.onPrimary} />
             </View>
           </View>
         </View>
@@ -74,6 +127,19 @@ interface Props {
 }
 
 export function CampaignCarousel({ campaigns }: Props) {
+  const styles = useThemedStyles((c) => ({
+    scroll: { width: CAMPAIGN_SLIDE_W },
+    scrollContent: { alignItems: 'stretch' },
+    dots: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 6,
+      marginTop: 12,
+    },
+    dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.iconMuted },
+    dotOn: { backgroundColor: c.primary, width: 18 },
+  }));
+
   const scrollRef = useRef<ScrollView>(null);
   const indexRef = useRef(0);
   const pausedRef = useRef(false);
@@ -163,61 +229,3 @@ export function CampaignCarousel({ campaigns }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  scroll: { width: CAMPAIGN_SLIDE_W },
-  scrollContent: { alignItems: 'stretch' },
-  slideCard: {
-    overflow: 'hidden',
-    backgroundColor: '#DBEAFE',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  slideGradient: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'flex-end',
-  },
-  slideContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    paddingTop: 40,
-  },
-  slideTitle: { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
-  slideMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
-  slideLoc: { fontSize: 13, color: '#E2E8F0', flex: 1 },
-  slideProgressBg: {
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    marginTop: 12,
-    overflow: 'hidden',
-  },
-  slideProgressFg: { height: '100%', backgroundColor: '#FFFFFF', borderRadius: 3 },
-  slideBottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 10,
-    gap: 8,
-  },
-  slideAmt: { fontSize: 12, color: '#F1F5F9', fontWeight: '600', flex: 1 },
-  slideCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  slideCtaText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 12,
-  },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#CBD5E1' },
-  dotOn: { backgroundColor: Colors.primary, width: 18 },
-});

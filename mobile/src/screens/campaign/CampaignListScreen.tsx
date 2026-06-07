@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  StatusBar,
   TextInput,
   ScrollView,
 } from 'react-native';
@@ -16,7 +15,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { HeaderGlassCircleButton } from '../../components/HeaderGlassCircleButton';
 import { CampaignCoverImage } from '../../components/CampaignCoverImage';
 import {
@@ -29,6 +30,8 @@ import type { Campaign } from '../../types/campaign';
 type SortKey = 'default' | 'ending_soon' | 'most_funded' | 'most_raised';
 
 function CampaignCard({ item }: { item: Campaign }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const pct = fundingProgress(item);
   const days = daysRemaining(item.end_date);
 
@@ -46,7 +49,7 @@ function CampaignCard({ item }: { item: Campaign }) {
           />
           {days != null && (
             <View style={styles.daysBadge}>
-              <Ionicons name="time-outline" size={12} color="#FFF" />
+              <Ionicons name="time-outline" size={12} color={colors.onPrimary} />
               <Text style={styles.daysText}>{days === 0 ? 'Last day' : `${days}d left`}</Text>
             </View>
           )}
@@ -57,7 +60,7 @@ function CampaignCard({ item }: { item: Campaign }) {
 
         <View style={styles.cardBody}>
           <View style={styles.locRow}>
-            <Ionicons name="location-outline" size={14} color={Colors.textSecondary} />
+            <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
             <Text style={styles.locText} numberOfLines={1}>
               {item.location ?? 'Nationwide'}
             </Text>
@@ -92,7 +95,7 @@ function CampaignCard({ item }: { item: Campaign }) {
           style={styles.donateBtn}
           onPress={() => router.push(`/(main)/campaigns/${item.id}/donate`)}
         >
-          <Ionicons name="heart" size={16} color="#FFF" />
+          <Ionicons name="heart" size={16} color={colors.onPrimary} />
           <Text style={styles.donateBtnText}>Donate</Text>
         </TouchableOpacity>
       </View>
@@ -101,6 +104,8 @@ function CampaignCard({ item }: { item: Campaign }) {
 }
 
 export default function CampaignListScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -174,11 +179,11 @@ export default function CampaignListScreen() {
       </Text>
 
       <View style={styles.searchBox}>
-        <Ionicons name="search-outline" size={18} color={Colors.textSecondary} />
+        <Ionicons name="search-outline" size={18} color={colors.textSecondary} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by name, location…"
-          placeholderTextColor="#94A3B8"
+          placeholderTextColor={colors.chevron}
           value={search}
           onChangeText={setSearch}
           autoCapitalize="none"
@@ -186,7 +191,7 @@ export default function CampaignListScreen() {
         />
         {search.length > 0 && (
           <TouchableOpacity onPress={() => setSearch('')}>
-            <Ionicons name="close-circle" size={18} color="#94A3B8" />
+            <Ionicons name="close-circle" size={18} color={colors.chevron} />
           </TouchableOpacity>
         )}
       </View>
@@ -219,23 +224,21 @@ export default function CampaignListScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="dark-content" />
-
       <View style={styles.header}>
         <HeaderGlassCircleButton onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />
+          <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
         </HeaderGlassCircleButton>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Campaigns</Text>
         </View>
         <HeaderGlassCircleButton onPress={() => router.push('/(main)/campaigns/history')}>
-          <Ionicons name="time-outline" size={22} color={Colors.textPrimary} />
+          <Ionicons name="time-outline" size={22} color={colors.textPrimary} />
         </HeaderGlassCircleButton>
       </View>
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <FlatList
@@ -247,7 +250,7 @@ export default function CampaignListScreen() {
           ListHeaderComponent={listHeader}
           ListEmptyComponent={
             <View style={styles.emptyWrap}>
-              <Ionicons name="search-outline" size={48} color="#CBD5E1" />
+              <Ionicons name="search-outline" size={48} color={colors.iconMuted} />
               <Text style={styles.emptyTitle}>
                 {search ? 'No matches found' : 'No active campaigns'}
               </Text>
@@ -263,7 +266,7 @@ export default function CampaignListScreen() {
               style={styles.trackLink}
               onPress={() => router.push('/(main)/campaigns/track')}
             >
-              <Ionicons name="receipt-outline" size={18} color={Colors.primary} />
+              <Ionicons name="receipt-outline" size={18} color={colors.primary} />
               <Text style={styles.trackLinkText}>Track a donation by ID</Text>
             </TouchableOpacity>
           }
@@ -273,24 +276,24 @@ export default function CampaignListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+const createStyles = (c: ThemeColors, _isDark: boolean) => ({
+  container: { flex: 1, backgroundColor: c.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: c.background,
   },
   headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: Colors.textPrimary },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: c.textPrimary },
 
   listHeader: { marginBottom: 4 },
   pageSubtitle: {
     fontSize: 14,
     lineHeight: 20,
-    color: Colors.textSecondary,
+    color: c.textSecondary,
     marginBottom: 16,
   },
   searchBox: {
@@ -298,49 +301,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     marginBottom: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.card,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: c.border,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    shadowColor: '#0F172A',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
   },
-  searchInput: { flex: 1, fontSize: 15, color: Colors.textPrimary, padding: 0 },
+  searchInput: { flex: 1, fontSize: 15, color: c.textPrimary, padding: 0 },
   chips: { gap: 8, paddingBottom: 14 },
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.card,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: c.border,
   },
-  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
-  chipTextActive: { color: '#FFFFFF' },
+  chipActive: { backgroundColor: c.primary, borderColor: c.primary },
+  chipText: { fontSize: 13, fontWeight: '600', color: c.textSecondary },
+  chipTextActive: { color: c.onPrimary },
   resultCount: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: c.textSecondary,
     fontWeight: '600',
     marginBottom: 12,
   },
 
   list: { paddingHorizontal: 16, paddingBottom: 32 },
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.card,
     borderRadius: 18,
     marginBottom: 18,
     overflow: 'hidden',
-    shadowColor: '#0F172A',
+    shadowColor: c.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
     shadowRadius: 12,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: c.border,
   },
   cardImageWrap: { position: 'relative' },
   cardImageGradient: {
@@ -353,7 +358,7 @@ const styles = StyleSheet.create({
     bottom: 14,
     fontSize: 18,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: c.onPrimary,
   },
   daysBadge: {
     position: 'absolute',
@@ -367,27 +372,27 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 20,
   },
-  daysText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
+  daysText: { fontSize: 11, fontWeight: '700', color: c.onPrimary },
   cardBody: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12 },
   locRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  locText: { fontSize: 13, color: Colors.textSecondary, flex: 1 },
+  locText: { fontSize: 13, color: c.textSecondary, flex: 1 },
   progressBg: {
     height: 8,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: c.border,
     borderRadius: 4,
     marginTop: 12,
     overflow: 'hidden',
   },
-  progressFg: { height: '100%', backgroundColor: Colors.primary, borderRadius: 4 },
+  progressFg: { height: '100%', backgroundColor: c.primary, borderRadius: 4 },
   amountRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 10,
   },
-  amountText: { fontSize: 14, color: Colors.textPrimary, fontWeight: '700' },
-  pctText: { fontSize: 13, fontWeight: '700', color: Colors.primary },
-  goalText: { fontSize: 12, color: Colors.textSecondary, marginTop: 4 },
+  amountText: { fontSize: 14, color: c.textPrimary, fontWeight: '700' },
+  pctText: { fontSize: 13, fontWeight: '700', color: c.primary },
+  goalText: { fontSize: 12, color: c.textSecondary, marginTop: 4 },
 
   cardActions: {
     flexDirection: 'row',
@@ -401,12 +406,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: c.muted,
   },
-  detailsBtnText: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
+  detailsBtnText: { fontSize: 14, fontWeight: '700', color: c.textPrimary },
   donateBtn: {
     flex: 1.4,
-    backgroundColor: Colors.primary,
+    backgroundColor: c.primary,
     borderRadius: 12,
     paddingVertical: 12,
     flexDirection: 'row',
@@ -414,12 +419,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
   },
-  donateBtnText: { color: '#FFF', fontWeight: '700', fontSize: 15 },
+  donateBtnText: { color: c.onPrimary, fontWeight: '700', fontSize: 15 },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   emptyWrap: { alignItems: 'center', paddingVertical: 48, gap: 8 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
-  emptySub: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', paddingHorizontal: 24 },
+  emptyTitle: { fontSize: 17, fontWeight: '700', color: c.textPrimary },
+  emptySub: { fontSize: 14, color: c.textSecondary, textAlign: 'center', paddingHorizontal: 24 },
   trackLink: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -427,5 +432,5 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 20,
   },
-  trackLinkText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
+  trackLinkText: { fontSize: 14, fontWeight: '600', color: c.primary },
 });

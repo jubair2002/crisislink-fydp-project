@@ -175,7 +175,7 @@ export const fetchDashboardData = async (): Promise<DashboardData> => {
       supabase
         .from('reports')
         .select('id', { count: 'exact', head: true })
-        .eq('status', 'submitted'),
+        .in('status', ['submitted', 'in_review']),
     ),
     tryRows<{ created_at: string }>(() =>
       supabase

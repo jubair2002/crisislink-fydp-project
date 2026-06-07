@@ -7,13 +7,14 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { HeaderGlassCircleButton } from '../../components/HeaderGlassCircleButton';
 import { Input } from '../../components/Input';
 import { trackDonation } from '../../services/donationService';
@@ -29,6 +30,8 @@ function statusIndex(status: string): number {
 }
 
 export default function DonationTrackingScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { code: initialCode } = useLocalSearchParams<{ code?: string }>();
   const [code, setCode] = useState(initialCode ?? '');
   const [loading, setLoading] = useState(false);
@@ -68,10 +71,9 @@ export default function DonationTrackingScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="dark-content" />
       <View style={styles.header}>
         <HeaderGlassCircleButton onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />
+          <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
         </HeaderGlassCircleButton>
         <Text style={styles.headerTitle}>Track Donation</Text>
         <View style={{ width: 40 }} />
@@ -91,7 +93,7 @@ export default function DonationTrackingScreen() {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#FFF" />
+            <ActivityIndicator color={colors.onPrimary} />
           ) : (
             <Text style={styles.searchBtnText}>Look up</Text>
           )}
@@ -124,7 +126,7 @@ export default function DonationTrackingScreen() {
                     ]}
                   >
                     {idx < currentStep ? (
-                      <Ionicons name="checkmark" size={14} color="#FFF" />
+                      <Ionicons name="checkmark" size={14} color={colors.onPrimary} />
                     ) : (
                       <Text style={styles.lifecycleNum}>{idx + 1}</Text>
                     )}
@@ -197,8 +199,8 @@ export default function DonationTrackingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+const createStyles = (c: ThemeColors, _isDark: boolean) => ({
+  container: { flex: 1, backgroundColor: c.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -206,78 +208,78 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: c.textPrimary },
   scroll: { padding: 16, paddingBottom: 40 },
-  hint: { fontSize: 14, color: Colors.textSecondary, marginBottom: 4 },
+  hint: { fontSize: 14, color: c.textSecondary, marginBottom: 4 },
   searchBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: c.primary,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 16,
   },
-  searchBtnText: { color: '#FFF', fontWeight: '700', fontSize: 15 },
-  error: { color: Colors.danger, fontSize: 14, marginBottom: 12 },
+  searchBtnText: { color: c.onPrimary, fontWeight: '700', fontSize: 15 },
+  error: { color: c.danger, fontSize: 14, marginBottom: 12 },
   result: { marginTop: 8 },
   summaryCard: {
-    backgroundColor: Colors.card,
+    backgroundColor: c.card,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: c.border,
     marginBottom: 20,
   },
-  summaryCode: { fontSize: 18, fontWeight: '800', color: Colors.primary },
-  summaryAmt: { fontSize: 24, fontWeight: '800', color: Colors.textPrimary, marginTop: 4 },
-  summaryMeta: { fontSize: 14, color: Colors.textSecondary, marginTop: 4 },
-  summaryStatus: { fontSize: 12, color: Colors.success, fontWeight: '600', marginTop: 8, textTransform: 'capitalize' },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, marginBottom: 12 },
+  summaryCode: { fontSize: 18, fontWeight: '800', color: c.primary },
+  summaryAmt: { fontSize: 24, fontWeight: '800', color: c.textPrimary, marginTop: 4 },
+  summaryMeta: { fontSize: 14, color: c.textSecondary, marginTop: 4 },
+  summaryStatus: { fontSize: 12, color: c.success, fontWeight: '600', marginTop: 8, textTransform: 'capitalize' },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: c.textPrimary, marginBottom: 12 },
   lifecycle: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
   lifecycleStep: { flex: 1, alignItems: 'center', position: 'relative' },
   lifecycleDot: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: c.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  lifecycleDotActive: { backgroundColor: Colors.primary },
-  lifecycleNum: { fontSize: 12, fontWeight: '700', color: Colors.textSecondary },
-  lifecycleLabel: { fontSize: 11, color: Colors.textSecondary, marginTop: 6, textAlign: 'center' },
-  lifecycleLabelActive: { color: Colors.primary, fontWeight: '600' },
+  lifecycleDotActive: { backgroundColor: c.primary },
+  lifecycleNum: { fontSize: 12, fontWeight: '700', color: c.textSecondary },
+  lifecycleLabel: { fontSize: 11, color: c.textSecondary, marginTop: 6, textAlign: 'center' },
+  lifecycleLabelActive: { color: c.primary, fontWeight: '600' },
   lifecycleLine: {
     position: 'absolute',
     top: 16,
     left: '60%',
     width: '80%',
     height: 2,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: c.border,
     zIndex: -1,
   },
-  lifecycleLineActive: { backgroundColor: Colors.primary },
+  lifecycleLineActive: { backgroundColor: c.primary },
   logCard: {
-    backgroundColor: Colors.card,
+    backgroundColor: c.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.success,
+    borderLeftColor: c.success,
   },
   logHeader: { flexDirection: 'row', justifyContent: 'space-between' },
-  logStatus: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
-  logTime: { fontSize: 11, color: Colors.textSecondary },
-  logDesc: { fontSize: 13, color: Colors.textSecondary, marginTop: 6, lineHeight: 18 },
+  logStatus: { fontSize: 14, fontWeight: '700', color: c.textPrimary },
+  logTime: { fontSize: 11, color: c.textSecondary },
+  logDesc: { fontSize: 13, color: c.textSecondary, marginTop: 6, lineHeight: 18 },
   proofImage: { width: '100%', height: 160, borderRadius: 8, marginTop: 10 },
   resourceCard: {
-    backgroundColor: Colors.card,
+    backgroundColor: c.card,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: c.border,
   },
-  resourceType: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
-  resourceMeta: { fontSize: 12, color: Colors.textSecondary, marginTop: 4 },
-  resourceAmt: { fontSize: 13, fontWeight: '600', color: Colors.primary, marginTop: 4 },
+  resourceType: { fontSize: 14, fontWeight: '600', color: c.textPrimary },
+  resourceMeta: { fontSize: 12, color: c.textSecondary, marginTop: 4 },
+  resourceAmt: { fontSize: 13, fontWeight: '600', color: c.primary, marginTop: 4 },
 });

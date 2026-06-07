@@ -9,7 +9,6 @@ import {
   Platform,
   Animated,
   ActivityIndicator,
-  StatusBar,
   Image,
   Alert,
 } from 'react-native';
@@ -19,7 +18,9 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { Input } from '../../components/Input';
 import { useAuthStore } from '../../store/authStore';
 import { useProfileStore } from '../../store/profileStore';
@@ -30,6 +31,8 @@ import {
 } from '../../services/profileService';
 
 export default function CitizenProfileForm() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { user, profile: authProfile, setProfile: setAuthProfile } = useAuthStore();
   const { setProfile } = useProfileStore();
 
@@ -55,7 +58,6 @@ export default function CitizenProfileForm() {
     ]).start();
   };
 
-  // Hydrate fields with anything already saved on the profile
   useEffect(() => {
     if (!authProfile) return;
     setPhone(authProfile.phone ?? '');
@@ -134,7 +136,6 @@ export default function CitizenProfileForm() {
         profile_completed: true,
       });
 
-      // Refresh server-side profile so guards re-evaluate.
       const fresh = await getCitizenProfile(user.id);
       setAuthProfile(fresh ?? updated);
       setProfile(fresh ?? updated);
@@ -153,8 +154,6 @@ export default function CitizenProfileForm() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -167,7 +166,7 @@ export default function CitizenProfileForm() {
           <View style={styles.header}>
             {router.canGoBack() ? (
               <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
+                <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
               </TouchableOpacity>
             ) : (
               <View style={{ width: 42 }} />
@@ -184,7 +183,7 @@ export default function CitizenProfileForm() {
           <Animated.View style={[styles.form, { transform: [{ translateX: shakeAnim }] }]}>
             {error !== '' && (
               <View style={styles.errorBanner}>
-                <Ionicons name="alert-circle-outline" size={18} color={Colors.danger} />
+                <Ionicons name="alert-circle-outline" size={18} color={colors.danger} />
                 <Text style={styles.errorBannerText}>{error}</Text>
               </View>
             )}
@@ -195,17 +194,17 @@ export default function CitizenProfileForm() {
                 {photoUri ? (
                   <Image source={{ uri: photoUri }} style={styles.photoImage} />
                 ) : (
-                  <Ionicons name="camera-outline" size={28} color={Colors.primary} />
+                  <Ionicons name="camera-outline" size={28} color={colors.primary} />
                 )}
                 {photoUploading && (
                   <View style={styles.photoOverlay}>
-                    <ActivityIndicator color="#FFFFFF" />
+                    <ActivityIndicator color={colors.onPrimary} />
                   </View>
                 )}
               </TouchableOpacity>
               <View style={{ flex: 1 }}>
                 <TouchableOpacity onPress={pickPhoto} activeOpacity={0.85} style={styles.photoBtn}>
-                  <Ionicons name="image-outline" size={16} color={Colors.primary} />
+                  <Ionicons name="image-outline" size={16} color={colors.primary} />
                   <Text style={styles.photoBtnText}>{photoUri ? 'Change photo' : 'Choose photo'}</Text>
                 </TouchableOpacity>
                 <Text style={styles.photoHint}>JPG or PNG, up to 5 MB.</Text>
@@ -262,9 +261,9 @@ export default function CitizenProfileForm() {
               disabled={loading}
               activeOpacity={0.88}
             >
-              <LinearGradient colors={['#2563EB', '#1D4ED8']} style={styles.submitBtnGradient}>
+              <LinearGradient colors={[colors.primary, colors.primary]} style={styles.submitBtnGradient}>
                 {loading ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ActivityIndicator color={colors.onPrimary} />
                 ) : (
                   <Text style={styles.submitBtnText}>Save and Continue</Text>
                 )}
@@ -277,8 +276,8 @@ export default function CitizenProfileForm() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
+const createStyles = (c: ThemeColors, _isDark: boolean) => ({
+  root: { flex: 1, backgroundColor: c.background },
   scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 40 },
 
   header: { flexDirection: 'row', alignItems: 'center', paddingTop: 8 },
@@ -288,18 +287,18 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: c.muted,
   },
 
   titleBlock: { marginTop: 24, marginBottom: 24 },
   title: {
     fontSize: 28,
     fontWeight: '800',
-    color: Colors.textPrimary,
+    color: c.textPrimary,
     letterSpacing: -0.5,
     marginBottom: 6,
   },
-  subtitle: { fontSize: 15, color: Colors.textSecondary, lineHeight: 22 },
+  subtitle: { fontSize: 15, color: c.textSecondary, lineHeight: 22 },
 
   form: {},
 
@@ -307,19 +306,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: c.dangerSurface,
     borderRadius: 12,
     padding: 14,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#FECACA',
+    borderColor: c.dangerSurfaceBorder,
   },
-  errorBannerText: { color: Colors.danger, fontSize: 13, fontWeight: '500', flex: 1 },
+  errorBannerText: { color: c.danger, fontSize: 13, fontWeight: '500', flex: 1 },
 
   sectionLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.textSecondary,
+    color: c.textSecondary,
     marginBottom: 10,
     marginLeft: 2,
   },
@@ -334,17 +333,17 @@ const styles = StyleSheet.create({
     width: 84,
     height: 84,
     borderRadius: 42,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: c.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#BFDBFE',
+    borderColor: c.primarySurfaceBorder,
     overflow: 'hidden',
   },
   photoImage: { width: '100%', height: '100%' },
   photoOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    backgroundColor: c.overlay,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -356,18 +355,18 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: c.primarySurface,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: c.primarySurfaceBorder,
   },
-  photoBtnText: { color: Colors.primary, fontSize: 13, fontWeight: '700' },
-  photoHint: { fontSize: 12, color: Colors.textSecondary, marginTop: 6 },
+  photoBtnText: { color: c.primary, fontSize: 13, fontWeight: '700' },
+  photoHint: { fontSize: 12, color: c.textSecondary, marginTop: 6 },
 
   submitBtn: {
     borderRadius: 16,
     overflow: 'hidden',
     marginTop: 16,
-    shadowColor: Colors.primary,
+    shadowColor: c.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 16,
@@ -375,5 +374,5 @@ const styles = StyleSheet.create({
   },
   submitBtnDisabled: { opacity: 0.65 },
   submitBtnGradient: { alignItems: 'center', justifyContent: 'center', paddingVertical: 17 },
-  submitBtnText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.3 },
+  submitBtnText: { fontSize: 16, fontWeight: '700', color: c.onPrimary, letterSpacing: 0.3 },
 });

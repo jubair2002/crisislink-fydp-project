@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  StatusBar,
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
@@ -14,7 +13,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useSegments } from 'expo-router';
 import { AppState } from 'react-native';
 
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { useAuthStore } from '../../store/authStore';
 import { useChatStore } from '../../store/chatStore';
 import { getVolunteerProfile } from '../../services/profileService';
@@ -35,6 +36,7 @@ import {
   selectLatestUnreadBroadcast,
   useNotificationStore,
 } from '../../store/notificationStore';
+import type { ChatListItem } from '../../types/chat';
 import {
   ChatTopBar,
   UnreadBadge,
@@ -59,20 +61,155 @@ function channelIcon(slug: string | null | undefined): keyof typeof Ionicons.gly
   }
 }
 
-function channelAccent(slug: string | null | undefined): { bg: string; fg: string } {
+function channelAccent(
+  slug: string | null | undefined,
+  c: ThemeColors,
+): { bg: string; fg: string } {
   switch (slug) {
     case 'emergency':
-      return { bg: '#FEE2E2', fg: Colors.danger };
+      return { bg: c.dangerSurface, fg: c.danger };
     case 'help':
-      return { bg: '#ECFDF5', fg: Colors.success };
+      return { bg: c.successSurface, fg: c.success };
     case 'announcements':
-      return { bg: '#FEF3C7', fg: Colors.warning };
+      return { bg: c.warningSurface, fg: c.warning };
     default:
-      return { bg: '#EFF6FF', fg: Colors.primary };
+      return { bg: c.primarySurface, fg: c.primary };
   }
 }
 
+const createStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.background },
+    headerRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    headerBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: c.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    inactiveBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginHorizontal: 16,
+      marginBottom: 4,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      backgroundColor: c.muted,
+      borderRadius: 10,
+    },
+    inactiveText: { flex: 1, fontSize: 13, color: c.textSecondary, lineHeight: 18 },
+    scroll: { padding: 16, paddingBottom: 32 },
+    headerNote: {
+      fontSize: 14,
+      color: c.textSecondary,
+      lineHeight: 20,
+      marginBottom: 16,
+    },
+    broadcastPrompt: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      marginBottom: 16,
+      padding: 12,
+      borderRadius: 10,
+      backgroundColor: c.warningSurface,
+      borderWidth: 1,
+      borderColor: c.warningSurfaceBorder,
+    },
+    broadcastPromptTitle: { fontSize: 13, fontWeight: '800', color: c.textPrimary },
+    broadcastPromptSub: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
+    sectionTitle: { fontSize: 15, fontWeight: '800', color: c.textPrimary },
+    sectionHeadRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 10,
+    },
+    sectionLink: { fontSize: 13, fontWeight: '700', color: c.primary },
+    sectionGap: { marginTop: 20, marginBottom: 10 },
+    cardList: { gap: 12 },
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.card,
+      borderRadius: 12,
+      padding: 14,
+      gap: 12,
+      shadowColor: c.shadow,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.06,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    cardIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cardBody: { flex: 1, gap: 4 },
+    cardTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+    cardTitle: { flex: 1, fontSize: 16, fontWeight: '800', color: c.textPrimary },
+    cardDesc: { fontSize: 13, color: c.textSecondary, lineHeight: 18 },
+    cardPreview: { fontSize: 12, color: c.chevron, marginTop: 2 },
+    actionBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: c.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 8,
+      minWidth: 72,
+      justifyContent: 'center',
+    },
+    actionBtnOpen: { backgroundColor: c.secondary },
+    actionBtnText: { color: c.onPrimary, fontWeight: '700', fontSize: 13 },
+    convCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.card,
+      borderRadius: 12,
+      padding: 14,
+      gap: 12,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    convIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: c.primarySurface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    convBody: { flex: 1, gap: 4 },
+    convTitle: { flex: 1, fontSize: 15, fontWeight: '700', color: c.textPrimary },
+    convTime: { fontSize: 11, color: c.textSecondary },
+    convBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+    convPreview: { flex: 1, fontSize: 13, color: c.textSecondary },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
+    errorText: { color: c.danger, textAlign: 'center' },
+    retryBtn: {
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+      backgroundColor: c.primary,
+      borderRadius: 8,
+    },
+    retryText: { color: c.onPrimary, fontWeight: '700' },
+    emptySection: { fontSize: 14, color: c.textSecondary, paddingVertical: 8 },
+    empty: { alignItems: 'center', paddingVertical: 40, gap: 10 },
+    emptyTitle: { fontSize: 18, fontWeight: '800', color: c.textPrimary },
+    emptySub: { fontSize: 14, color: c.textSecondary, textAlign: 'center', lineHeight: 20 },
+  });
+
 export default function ChatListScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const user = useAuthStore((s) => s.user);
   const profile = useAuthStore((s) => s.profile);
   const setChatsUnread = useChatStore((s) => s.setChatsUnread);
@@ -203,7 +340,7 @@ export default function ChatListScreen() {
   };
 
   const renderChannelCard = (item: ChatListItem) => {
-    const accent = channelAccent(item.channel_slug);
+    const accent = channelAccent(item.channel_slug, colors);
     const isJoining = joiningId === item.id;
 
     return (
@@ -231,11 +368,11 @@ export default function ChatListScreen() {
           disabled={isJoining}
         >
           {isJoining ? (
-            <ActivityIndicator size="small" color="#FFF" />
+            <ActivityIndicator size="small" color={colors.onPrimary} />
           ) : (
             <>
               <Text style={styles.actionBtnText}>{item.is_member ? 'Open' : 'Join'}</Text>
-              <Ionicons name="arrow-forward" size={16} color="#FFF" />
+              <Ionicons name="arrow-forward" size={16} color={colors.onPrimary} />
             </>
           )}
         </TouchableOpacity>
@@ -251,7 +388,7 @@ export default function ChatListScreen() {
       activeOpacity={0.85}
     >
       <View style={styles.convIcon}>
-        <Ionicons name={chatTypeIcon(item.type)} size={22} color={Colors.primary} />
+        <Ionicons name={chatTypeIcon(item.type)} size={22} color={colors.primary} />
       </View>
       <View style={styles.convBody}>
         <View style={styles.cardTitleRow}>
@@ -274,7 +411,6 @@ export default function ChatListScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
       <ChatTopBar
         title="Messages"
         hideBack={isTabRoot}
@@ -295,7 +431,7 @@ export default function ChatListScreen() {
                 style={styles.headerBtn}
                 hitSlop={8}
               >
-                <Ionicons name="megaphone-outline" size={20} color={Colors.textPrimary} />
+                <Ionicons name="megaphone-outline" size={20} color={colors.textPrimary} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -304,7 +440,7 @@ export default function ChatListScreen() {
 
       {!isActive ? (
         <View style={styles.inactiveBanner}>
-          <Ionicons name="moon-outline" size={16} color={Colors.textSecondary} />
+          <Ionicons name="moon-outline" size={16} color={colors.textSecondary} />
           <Text style={styles.inactiveText}>
             You are inactive — chat notifications are paused.
           </Text>
@@ -313,7 +449,7 @@ export default function ChatListScreen() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : error ? (
         <View style={styles.center}>
@@ -348,7 +484,7 @@ export default function ChatListScreen() {
               activeOpacity={0.88}
               onPress={() => router.push('/(main)/notifications')}
             >
-              <Ionicons name="megaphone" size={18} color={Colors.warning} />
+              <Ionicons name="megaphone" size={18} color={colors.warning} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.broadcastPromptTitle}>
                   {unreadBroadcastCount === 1
@@ -359,7 +495,7 @@ export default function ChatListScreen() {
                   {latestUnreadBroadcast.title}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+              <Ionicons name="chevron-forward" size={18} color={colors.chevron} />
             </TouchableOpacity>
           ) : null}
 
@@ -386,7 +522,7 @@ export default function ChatListScreen() {
 
           {channels.length === 0 && conversations.length === 0 ? (
             <View style={styles.empty}>
-              <Ionicons name="chatbubbles-outline" size={48} color="#CBD5E1" />
+              <Ionicons name="chatbubbles-outline" size={48} color={colors.iconMuted} />
               <Text style={styles.emptyTitle}>No messages yet</Text>
               <Text style={styles.emptySub}>
                 Task and campaign chats appear here when you are assigned.
@@ -398,132 +534,3 @@ export default function ChatListScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  headerBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  inactiveBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginHorizontal: 16,
-    marginBottom: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 10,
-  },
-  inactiveText: { flex: 1, fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
-  scroll: { padding: 16, paddingBottom: 32 },
-  headerNote: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  broadcastPrompt: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 16,
-    padding: 12,
-    borderRadius: 10,
-    backgroundColor: '#FFFBEB',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-  },
-  broadcastPromptTitle: { fontSize: 13, fontWeight: '800', color: Colors.textPrimary },
-  broadcastPromptSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  sectionTitle: { fontSize: 15, fontWeight: '800', color: Colors.textPrimary },
-  sectionHeadRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  sectionLink: { fontSize: 13, fontWeight: '700', color: Colors.primary },
-  sectionGap: { marginTop: 20, marginBottom: 10 },
-  cardList: { gap: 12 },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.card,
-    borderRadius: 12,
-    padding: 14,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardBody: { flex: 1, gap: 4 },
-  cardTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  cardTitle: { flex: 1, fontSize: 16, fontWeight: '800', color: Colors.textPrimary },
-  cardDesc: { fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
-  cardPreview: { fontSize: 12, color: '#94A3B8', marginTop: 2 },
-  actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    minWidth: 72,
-    justifyContent: 'center',
-  },
-  actionBtnOpen: { backgroundColor: Colors.secondary },
-  actionBtnText: { color: '#FFF', fontWeight: '700', fontSize: 13 },
-  convCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.card,
-    borderRadius: 12,
-    padding: 14,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  convIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  convBody: { flex: 1, gap: 4 },
-  convTitle: { flex: 1, fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
-  convTime: { fontSize: 11, color: Colors.textSecondary },
-  convBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  convPreview: { flex: 1, fontSize: 13, color: Colors.textSecondary },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
-  errorText: { color: Colors.danger, textAlign: 'center' },
-  retryBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: Colors.primary,
-    borderRadius: 8,
-  },
-  retryText: { color: '#FFF', fontWeight: '700' },
-  emptySection: { fontSize: 14, color: Colors.textSecondary, paddingVertical: 8 },
-  empty: { alignItems: 'center', paddingVertical: 40, gap: 10 },
-  emptyTitle: { fontSize: 18, fontWeight: '800', color: Colors.textPrimary },
-  emptySub: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 20 },
-});

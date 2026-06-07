@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Colors } from '../../constants/colors';
+import type { ThemeColors } from '../../constants/themes';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
 
 const PAGE_PAD = 16;
 const CARD_INNER_PAD = 14;
@@ -33,10 +35,85 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
+const createStyles = (c: ThemeColors) => ({
+  section: {
+    marginBottom: 18,
+    paddingHorizontal: PAGE_PAD,
+  },
+  sectionHeading: {
+    fontSize: 16,
+    fontWeight: '800' as const,
+    color: c.textPrimary,
+    marginBottom: 12,
+  },
+  card: {
+    alignSelf: 'stretch' as const,
+    backgroundColor: c.card,
+    borderRadius: 16,
+    padding: CARD_INNER_PAD,
+    borderWidth: 1,
+    borderColor: c.border,
+  },
+  grid: {
+    alignSelf: 'center' as const,
+  },
+  row: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+    width: '100%' as const,
+    gap: 10,
+  },
+  cell: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center' as const,
+  },
+  cellPlaceholder: {
+    flex: 1,
+    minWidth: 0,
+  },
+  iconCircle: {
+    width: ICON_SIZE,
+    height: ICON_SIZE,
+    borderRadius: ICON_SIZE / 2,
+    backgroundColor: c.card,
+    borderWidth: 1,
+    borderColor: c.border,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    marginBottom: 8,
+  },
+  label: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: c.textPrimary,
+    textAlign: 'center' as const,
+    lineHeight: 14,
+    width: '100%' as const,
+  },
+  toggleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 6,
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: c.border,
+  },
+  toggleText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: c.primary,
+  },
+});
+
 /** Collapsed: 2 rows of 4 services. Expanded: all rows of 4. */
 export function ExpandableServiceGrid({ title = 'Services', items }: Props) {
   const [expanded, setExpanded] = useState(false);
   const { width: screenW } = useWindowDimensions();
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
 
   const visible = expanded ? items : items.slice(0, Math.min(COLLAPSED_COUNT, items.length));
   const showToggle = items.length > COLLAPSED_COUNT;
@@ -63,7 +140,7 @@ export function ExpandableServiceGrid({ title = 'Services', items }: Props) {
                   activeOpacity={0.82}
                 >
                   <View style={styles.iconCircle}>
-                    <Ionicons name={s.icon} size={22} color={Colors.primary} />
+                    <Ionicons name={s.icon} size={22} color={colors.primary} />
                   </View>
                   <Text style={styles.label} numberOfLines={2}>
                     {s.label}
@@ -81,83 +158,10 @@ export function ExpandableServiceGrid({ title = 'Services', items }: Props) {
         {showToggle ? (
           <TouchableOpacity style={styles.toggleRow} onPress={() => setExpanded((v) => !v)} activeOpacity={0.75}>
             <Text style={styles.toggleText}>{expanded ? 'Show less' : 'See all services'}</Text>
-            <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={18} color={Colors.primary} />
+            <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.primary} />
           </TouchableOpacity>
         ) : null}
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  section: {
-    marginBottom: 18,
-    paddingHorizontal: PAGE_PAD,
-  },
-  sectionHeading: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: Colors.textPrimary,
-    marginBottom: 12,
-  },
-  card: {
-    alignSelf: 'stretch',
-    backgroundColor: Colors.card,
-    borderRadius: 16,
-    padding: CARD_INNER_PAD,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  grid: {
-    alignSelf: 'center',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    width: '100%',
-    gap: 10,
-  },
-  cell: {
-    flex: 1,
-    minWidth: 0,
-    alignItems: 'center',
-  },
-  cellPlaceholder: {
-    flex: 1,
-    minWidth: 0,
-  },
-  iconCircle: {
-    width: ICON_SIZE,
-    height: ICON_SIZE,
-    borderRadius: ICON_SIZE / 2,
-    backgroundColor: Colors.card,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    textAlign: 'center',
-    lineHeight: 14,
-    width: '100%',
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 14,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-  },
-  toggleText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.primary,
-  },
-});

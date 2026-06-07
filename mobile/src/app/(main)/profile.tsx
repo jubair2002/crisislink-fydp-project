@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   Image,
@@ -14,13 +13,179 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { useAuthStore } from '../../store/authStore';
 import { getVolunteerProfile } from '../../services/profileService';
 import { deleteAccount } from '../../services/authService';
 import type { VolunteerProfile } from '../../types/profile';
 
 export default function ProfileTabScreen() {
+  const { colors, isDark } = useTheme();
+  const styles = useThemedStyles((c) => ({
+    root: { flex: 1, backgroundColor: c.background },
+    scroll: { padding: 20, paddingBottom: 110 },
+    headerCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: c.card,
+      borderRadius: 16,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: c.border,
+      marginBottom: 14,
+    },
+    avatar: { width: 56, height: 56, borderRadius: 28 },
+    avatarPlaceholder: {
+      backgroundColor: c.primarySurface,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1.5,
+      borderColor: c.primarySurfaceBorder,
+    },
+    headerInfo: { flex: 1, gap: 2 },
+    name: { fontSize: 16, fontWeight: '800', color: c.textPrimary },
+    email: { fontSize: 12, color: c.textSecondary },
+    badgeRow: { flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' },
+    roleBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      backgroundColor: c.primarySurface,
+      borderColor: c.primarySurfaceBorder,
+      borderWidth: 1,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 999,
+    },
+    roleBadgeText: { fontSize: 10, fontWeight: '700', color: c.primary },
+    verifyBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 999,
+      borderWidth: 1,
+    },
+    verifyBadgeText: { fontSize: 10, fontWeight: '700' },
+    editBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      paddingVertical: 7,
+      paddingHorizontal: 10,
+      borderRadius: 999,
+      backgroundColor: c.primarySurface,
+      borderWidth: 1,
+      borderColor: c.primarySurfaceBorder,
+    },
+    editBtnText: { color: c.primary, fontSize: 11, fontWeight: '700' },
+    incompleteCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      padding: 14,
+      borderRadius: 14,
+      backgroundColor: c.warningSurface,
+      borderWidth: 1,
+      borderColor: c.warningSurfaceBorder,
+      marginBottom: 14,
+    },
+    incompleteIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.warningSurfaceBorder,
+    },
+    incompleteTitle: { fontSize: 14, fontWeight: '700', color: c.warning },
+    incompleteText: { fontSize: 12, color: c.warning, marginTop: 2, lineHeight: 16, opacity: 0.85 },
+    section: {
+      backgroundColor: c.card,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: 16,
+      marginBottom: 16,
+    },
+    sectionTitle: {
+      fontSize: 12,
+      fontWeight: '800',
+      color: c.textSecondary,
+      letterSpacing: 0.4,
+      textTransform: 'uppercase',
+      marginBottom: 12,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 12,
+      paddingVertical: 8,
+    },
+    rowLabel: { fontSize: 11, color: c.textSecondary, marginBottom: 2 },
+    rowValue: { fontSize: 14, color: c.textPrimary, fontWeight: '600' },
+    upgradeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      padding: 14,
+      borderRadius: 14,
+      backgroundColor: c.card,
+      borderWidth: 1,
+      borderColor: c.border,
+      marginBottom: 16,
+    },
+    upgradeRowIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      backgroundColor: c.primarySurface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    upgradeRowTitle: { fontSize: 14, fontWeight: '700', color: c.textPrimary },
+    upgradeRowSub: { fontSize: 12, color: c.textSecondary, marginTop: 1 },
+    accountSection: {
+      backgroundColor: c.card,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: 16,
+      marginBottom: 16,
+    },
+    accountRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingVertical: 6,
+    },
+    accountIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    accountRowTitle: { fontSize: 14, fontWeight: '700', color: c.textPrimary },
+    accountRowSub: { fontSize: 12, color: c.textSecondary, marginTop: 1 },
+    accountDivider: { height: 1, backgroundColor: c.muted, marginVertical: 8 },
+    logoutBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      padding: 16,
+      borderWidth: 1.5,
+      borderColor: c.dangerSurfaceBorder,
+      borderRadius: 14,
+      backgroundColor: c.dangerSurface,
+    },
+    logoutText: { color: c.danger, fontWeight: '700', fontSize: 15 },
+  }));
+
   const { user, profile, logout } = useAuthStore();
   const role = profile?.role ?? 'citizen';
   const [volunteer, setVolunteer] = useState<VolunteerProfile | null>(null);
@@ -50,12 +215,32 @@ export default function ProfileTabScreen() {
   const verifyBadge = (() => {
     if (role !== 'volunteer' || !volunteer) return null;
     if (volunteer.verification_status === 'approved')
-      return { color: Colors.success, bg: '#ECFDF5', border: '#A7F3D0', label: 'Verified' };
+      return {
+        color: colors.success,
+        bg: colors.successSurface,
+        border: colors.successSurfaceBorder,
+        label: 'Verified',
+      };
     if (volunteer.verification_status === 'pending')
-      return { color: '#92400E', bg: '#FFFBEB', border: '#FDE68A', label: 'Pending review' };
+      return {
+        color: colors.warning,
+        bg: colors.warningSurface,
+        border: colors.warningSurfaceBorder,
+        label: 'Pending review',
+      };
     if (volunteer.verification_status === 'rejected')
-      return { color: '#991B1B', bg: '#FEF2F2', border: '#FECACA', label: 'Rejected' };
-    return { color: Colors.textSecondary, bg: '#F1F5F9', border: '#E2E8F0', label: 'Suspended' };
+      return {
+        color: colors.danger,
+        bg: colors.dangerSurface,
+        border: colors.dangerSurfaceBorder,
+        label: 'Rejected',
+      };
+    return {
+      color: colors.textSecondary,
+      bg: colors.muted,
+      border: colors.border,
+      label: 'Suspended',
+    };
   })();
 
   const profileIncomplete = profile && !profile.profile_completed;
@@ -91,7 +276,10 @@ export default function ProfileTabScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
+      />
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
@@ -101,7 +289,7 @@ export default function ProfileTabScreen() {
             <Image source={{ uri: profile.profile_photo_url }} style={styles.avatar} />
           ) : (
             <View style={[styles.avatar, styles.avatarPlaceholder]}>
-              <Ionicons name="person" size={26} color={Colors.primary} />
+              <Ionicons name="person" size={26} color={colors.primary} />
             </View>
           )}
 
@@ -117,7 +305,7 @@ export default function ProfileTabScreen() {
                 <Ionicons
                   name={role === 'volunteer' ? 'people' : 'person'}
                   size={11}
-                  color={Colors.primary}
+                  color={colors.primary}
                 />
                 <Text style={styles.roleBadgeText}>
                   {role.charAt(0).toUpperCase() + role.slice(1)}
@@ -153,7 +341,7 @@ export default function ProfileTabScreen() {
             onPress={() => router.push('/(auth)/edit-profile')}
             hitSlop={8}
           >
-            <Ionicons name="create-outline" size={14} color={Colors.primary} />
+            <Ionicons name="create-outline" size={14} color={colors.primary} />
             <Text style={styles.editBtnText}>Edit profile</Text>
           </TouchableOpacity>
         </View>
@@ -165,7 +353,7 @@ export default function ProfileTabScreen() {
             style={styles.incompleteCard}
           >
             <View style={styles.incompleteIcon}>
-              <Ionicons name="alert-circle" size={20} color={Colors.warning} />
+              <Ionicons name="alert-circle" size={20} color={colors.warning} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.incompleteTitle}>Complete your profile</Text>
@@ -175,7 +363,7 @@ export default function ProfileTabScreen() {
                   : 'Add your contact details so we can reach you in an emergency.'}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            <Ionicons name="chevron-forward" size={18} color={colors.chevron} />
           </TouchableOpacity>
         )}
 
@@ -196,7 +384,7 @@ export default function ProfileTabScreen() {
             <Text style={styles.sectionTitle}>Volunteer details</Text>
             {loading ? (
               <View style={{ padding: 16, alignItems: 'center' }}>
-                <ActivityIndicator color={Colors.primary} />
+                <ActivityIndicator color={colors.primary} />
               </View>
             ) : volunteer ? (
               <>
@@ -232,7 +420,7 @@ export default function ProfileTabScreen() {
                 />
               </>
             ) : (
-              <Text style={{ color: Colors.textSecondary, padding: 12 }}>
+              <Text style={{ color: colors.textSecondary, padding: 12 }}>
                 No volunteer record found.
               </Text>
             )}
@@ -246,13 +434,13 @@ export default function ProfileTabScreen() {
             style={styles.upgradeRow}
           >
             <View style={styles.upgradeRowIcon}>
-              <Ionicons name="people-outline" size={20} color={Colors.primary} />
+              <Ionicons name="people-outline" size={20} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.upgradeRowTitle}>Become a Volunteer</Text>
               <Text style={styles.upgradeRowSub}>Apply to help disaster response efforts</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            <Ionicons name="chevron-forward" size={18} color={colors.chevron} />
           </TouchableOpacity>
         )}
 
@@ -264,14 +452,14 @@ export default function ProfileTabScreen() {
             activeOpacity={0.85}
             onPress={() => router.push('/(auth)/change-password')}
           >
-            <View style={[styles.accountIcon, { backgroundColor: '#EFF6FF' }]}>
-              <Ionicons name="lock-closed-outline" size={18} color={Colors.primary} />
+            <View style={[styles.accountIcon, { backgroundColor: colors.primarySurface }]}>
+              <Ionicons name="lock-closed-outline" size={18} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.accountRowTitle}>Change password</Text>
               <Text style={styles.accountRowSub}>Update your sign-in password</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            <Ionicons name="chevron-forward" size={18} color={colors.chevron} />
           </TouchableOpacity>
 
           <View style={styles.accountDivider} />
@@ -282,25 +470,25 @@ export default function ProfileTabScreen() {
             onPress={confirmDeleteAccount}
             disabled={deleting}
           >
-            <View style={[styles.accountIcon, { backgroundColor: '#FEF2F2' }]}>
+            <View style={[styles.accountIcon, { backgroundColor: colors.dangerSurface }]}>
               {deleting ? (
-                <ActivityIndicator size="small" color={Colors.danger} />
+                <ActivityIndicator size="small" color={colors.danger} />
               ) : (
-                <Ionicons name="trash-outline" size={18} color={Colors.danger} />
+                <Ionicons name="trash-outline" size={18} color={colors.danger} />
               )}
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.accountRowTitle, { color: Colors.danger }]}>
+              <Text style={[styles.accountRowTitle, { color: colors.danger }]}>
                 Delete account
               </Text>
               <Text style={styles.accountRowSub}>Permanently remove your data</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            <Ionicons name="chevron-forward" size={18} color={colors.chevron} />
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.logoutBtn} onPress={logout} activeOpacity={0.85}>
-          <Ionicons name="log-out-outline" size={18} color={Colors.danger} />
+          <Ionicons name="log-out-outline" size={18} color={colors.danger} />
           <Text style={styles.logoutText}>Sign out</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -317,9 +505,21 @@ function Row({
   label: string;
   value: string;
 }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles((c) => ({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 12,
+      paddingVertical: 8,
+    },
+    rowLabel: { fontSize: 11, color: c.textSecondary, marginBottom: 2 },
+    rowValue: { fontSize: 14, color: c.textPrimary, fontWeight: '600' },
+  }));
+
   return (
     <View style={styles.row}>
-      <Ionicons name={icon} size={16} color={Colors.primary} />
+      <Ionicons name={icon} size={16} color={colors.primary} />
       <View style={{ flex: 1 }}>
         <Text style={styles.rowLabel}>{label}</Text>
         <Text style={styles.rowValue} numberOfLines={2}>
@@ -329,173 +529,3 @@ function Row({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
-  scroll: { padding: 20, paddingBottom: 110 },
-
-  headerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 14,
-  },
-  avatar: { width: 56, height: 56, borderRadius: 28 },
-  avatarPlaceholder: {
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#BFDBFE',
-  },
-  headerInfo: { flex: 1, gap: 2 },
-  name: { fontSize: 16, fontWeight: '800', color: Colors.textPrimary },
-  email: { fontSize: 12, color: Colors.textSecondary },
-  badgeRow: { flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' },
-  roleBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-  },
-  roleBadgeText: { fontSize: 10, fontWeight: '700', color: Colors.primary },
-  verifyBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  verifyBadgeText: { fontSize: 10, fontWeight: '700' },
-  editBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingVertical: 7,
-    paddingHorizontal: 10,
-    borderRadius: 999,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  editBtnText: { color: Colors.primary, fontSize: 11, fontWeight: '700' },
-
-  incompleteCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: '#FFFBEB',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    marginBottom: 14,
-  },
-  incompleteIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FEF3C7',
-  },
-  incompleteTitle: { fontSize: 14, fontWeight: '700', color: '#92400E' },
-  incompleteText: { fontSize: 12, color: '#92400E', marginTop: 2, lineHeight: 16 },
-
-  section: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 16,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: Colors.textSecondary,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-    marginBottom: 12,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    paddingVertical: 8,
-  },
-  rowLabel: { fontSize: 11, color: Colors.textSecondary, marginBottom: 2 },
-  rowValue: { fontSize: 14, color: Colors.textPrimary, fontWeight: '600' },
-
-  upgradeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 16,
-  },
-  upgradeRowIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  upgradeRowTitle: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
-  upgradeRowSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
-
-  accountSection: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 16,
-    marginBottom: 16,
-  },
-  accountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 6,
-  },
-  accountIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  accountRowTitle: { fontSize: 14, fontWeight: '700', color: Colors.textPrimary },
-  accountRowSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
-  accountDivider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 8 },
-
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    padding: 16,
-    borderWidth: 1.5,
-    borderColor: '#FCA5A5',
-    borderRadius: 14,
-    backgroundColor: '#FEF2F2',
-  },
-  logoutText: { color: Colors.danger, fontWeight: '700', fontSize: 15 },
-});

@@ -13,7 +13,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { HeaderGlassCircleButton } from '../../components/HeaderGlassCircleButton';
 import { useAuthStore } from '../../store/authStore';
 import {
@@ -29,6 +31,8 @@ import type { Campaign, CampaignResource, CampaignUpdate, CampaignVolunteer } fr
 import { formatTimeAgo } from '../home/homeShared';
 
 export default function CampaignDetailScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = useAuthStore((s) => s.user);
   const profile = useAuthStore((s) => s.profile);
@@ -80,7 +84,7 @@ export default function CampaignDetailScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -108,20 +112,20 @@ export default function CampaignDetailScreen() {
           <Image source={{ uri: campaign.media_url }} style={styles.hero} />
         ) : (
           <View style={[styles.hero, styles.heroPlaceholder]}>
-            <Ionicons name="heart" size={48} color="#93C5FD" />
+            <Ionicons name="heart" size={48} color={colors.primary} />
           </View>
         )}
 
         <View style={styles.heroOverlay}>
           <HeaderGlassCircleButton onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={22} color="#FFF" />
+            <Ionicons name="arrow-back" size={22} color={colors.onPrimary} />
           </HeaderGlassCircleButton>
         </View>
 
         <View style={styles.body}>
           <Text style={styles.title}>{campaign.title}</Text>
           <View style={styles.locRow}>
-            <Ionicons name="location-outline" size={16} color={Colors.textSecondary} />
+            <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
             <Text style={styles.loc}>{campaign.location ?? 'Nationwide'}</Text>
             {days != null && <Text style={styles.days}>{days === 0 ? 'Ends today' : `${days} days left`}</Text>}
           </View>
@@ -192,7 +196,7 @@ export default function CampaignDetailScreen() {
               <Text style={styles.sectionTitle}>Volunteers ({volunteers.length})</Text>
               {volunteers.slice(0, 8).map((v) => (
                 <View key={v.id} style={styles.volRow}>
-                  <Ionicons name="person-circle-outline" size={20} color={Colors.primary} />
+                  <Ionicons name="person-circle-outline" size={20} color={colors.primary} />
                   <Text style={styles.volName}>{v.profile?.name ?? 'Volunteer'}</Text>
                   <Text style={styles.volRole}>{v.role}</Text>
                 </View>
@@ -206,7 +210,7 @@ export default function CampaignDetailScreen() {
               onPress={() => void handleJoinVolunteer()}
               disabled={joining}
             >
-              <Ionicons name="hand-left-outline" size={18} color={Colors.primary} />
+              <Ionicons name="hand-left-outline" size={18} color={colors.primary} />
               <Text style={styles.volunteerBtnText}>{joining ? 'Joining…' : 'Volunteer for this campaign'}</Text>
             </TouchableOpacity>
           )}
@@ -218,7 +222,7 @@ export default function CampaignDetailScreen() {
           style={styles.donateBtn}
           onPress={() => router.push(`/(main)/campaigns/${campaign.id}/donate`)}
         >
-          <Ionicons name="heart" size={20} color="#FFF" />
+          <Ionicons name="heart" size={20} color={colors.onPrimary} />
           <Text style={styles.donateBtnText}>Donate Now</Text>
         </TouchableOpacity>
       </View>
@@ -226,62 +230,62 @@ export default function CampaignDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  errorText: { textAlign: 'center', fontSize: 16, color: Colors.textSecondary, marginTop: 40 },
-  link: { textAlign: 'center', color: Colors.primary, marginTop: 12 },
+const createStyles = (c: ThemeColors, _isDark: boolean) => ({
+  container: { flex: 1, backgroundColor: c.background },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.background },
+  errorText: { textAlign: 'center', fontSize: 16, color: c.textSecondary, marginTop: 40 },
+  link: { textAlign: 'center', color: c.primary, marginTop: 12 },
   hero: { width: '100%', height: 220 },
-  heroPlaceholder: { backgroundColor: '#DBEAFE', alignItems: 'center', justifyContent: 'center' },
+  heroPlaceholder: { backgroundColor: c.primarySurface, alignItems: 'center', justifyContent: 'center' },
   heroOverlay: { position: 'absolute', top: 48, left: 16 },
   body: { padding: 16, paddingBottom: 100 },
-  title: { fontSize: 24, fontWeight: '800', color: Colors.textPrimary },
+  title: { fontSize: 24, fontWeight: '800', color: c.textPrimary },
   locRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' },
-  loc: { fontSize: 14, color: Colors.textSecondary, flex: 1 },
-  days: { fontSize: 12, fontWeight: '600', color: Colors.primary, backgroundColor: '#EFF6FF', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  loc: { fontSize: 14, color: c.textSecondary, flex: 1 },
+  days: { fontSize: 12, fontWeight: '600', color: c.primary, backgroundColor: c.primarySurface, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
   progressCard: {
     marginTop: 16,
-    backgroundColor: Colors.card,
+    backgroundColor: c.card,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: c.border,
   },
-  progressBg: { height: 10, backgroundColor: '#E2E8F0', borderRadius: 5, overflow: 'hidden' },
-  progressFg: { height: '100%', backgroundColor: Colors.primary, borderRadius: 5 },
+  progressBg: { height: 10, backgroundColor: c.border, borderRadius: 5, overflow: 'hidden' },
+  progressFg: { height: '100%', backgroundColor: c.primary, borderRadius: 5 },
   amountRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
-  raised: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
-  target: { fontSize: 13, color: Colors.textSecondary },
-  pctLabel: { fontSize: 12, color: Colors.primary, fontWeight: '600', marginTop: 4 },
+  raised: { fontSize: 15, fontWeight: '700', color: c.textPrimary },
+  target: { fontSize: 13, color: c.textSecondary },
+  pctLabel: { fontSize: 12, color: c.primary, fontWeight: '600', marginTop: 4 },
   section: { marginTop: 24 },
-  sectionTitle: { fontSize: 17, fontWeight: '700', color: Colors.textPrimary, marginBottom: 10 },
-  bodyText: { fontSize: 15, lineHeight: 22, color: Colors.textSecondary },
+  sectionTitle: { fontSize: 17, fontWeight: '700', color: c.textPrimary, marginBottom: 10 },
+  bodyText: { fontSize: 15, lineHeight: 22, color: c.textSecondary },
   resourceRow: {
-    backgroundColor: Colors.card,
+    backgroundColor: c.card,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: c.border,
   },
-  resourceType: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary },
-  resourceMeta: { fontSize: 12, color: Colors.textSecondary, marginTop: 4 },
-  resourceAmt: { fontSize: 13, fontWeight: '600', color: Colors.primary, marginTop: 4 },
+  resourceType: { fontSize: 15, fontWeight: '600', color: c.textPrimary },
+  resourceMeta: { fontSize: 12, color: c.textSecondary, marginTop: 4 },
+  resourceAmt: { fontSize: 13, fontWeight: '600', color: c.primary, marginTop: 4 },
   updateCard: {
-    backgroundColor: Colors.card,
+    backgroundColor: c.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.primary,
+    borderLeftColor: c.primary,
   },
-  updateTitle: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
-  updateTime: { fontSize: 11, color: Colors.textSecondary, marginTop: 2 },
-  updateBody: { fontSize: 14, color: Colors.textSecondary, marginTop: 8, lineHeight: 20 },
+  updateTitle: { fontSize: 15, fontWeight: '700', color: c.textPrimary },
+  updateTime: { fontSize: 11, color: c.textSecondary, marginTop: 2 },
+  updateBody: { fontSize: 14, color: c.textSecondary, marginTop: 8, lineHeight: 20 },
   updateImage: { width: '100%', height: 160, borderRadius: 8, marginTop: 10 },
   volRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 },
-  volName: { flex: 1, fontSize: 14, color: Colors.textPrimary },
-  volRole: { fontSize: 12, color: Colors.textSecondary, textTransform: 'capitalize' },
+  volName: { flex: 1, fontSize: 14, color: c.textPrimary },
+  volRole: { fontSize: 12, color: c.textSecondary, textTransform: 'capitalize' },
   volunteerBtn: {
     marginTop: 16,
     flexDirection: 'row',
@@ -291,10 +295,10 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: Colors.primary,
-    backgroundColor: '#EFF6FF',
+    borderColor: c.primary,
+    backgroundColor: c.primarySurface,
   },
-  volunteerBtnText: { fontSize: 15, fontWeight: '600', color: Colors.primary },
+  volunteerBtnText: { fontSize: 15, fontWeight: '600', color: c.primary },
   footer: {
     position: 'absolute',
     bottom: 0,
@@ -302,12 +306,12 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 16,
     paddingBottom: 24,
-    backgroundColor: Colors.card,
+    backgroundColor: c.card,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
+    borderTopColor: c.border,
   },
   donateBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: c.primary,
     borderRadius: 14,
     paddingVertical: 16,
     flexDirection: 'row',
@@ -315,5 +319,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  donateBtnText: { color: '#FFF', fontSize: 17, fontWeight: '700' },
+  donateBtnText: { color: c.onPrimary, fontSize: 17, fontWeight: '700' },
 });

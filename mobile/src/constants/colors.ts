@@ -1,3 +1,7 @@
+/**
+ * Static light palette — prefer `useTheme().colors` for theme-aware UI.
+ * Kept for legacy imports; maps to light theme tokens only.
+ */
 export const Colors = {
   primary: '#2563EB',
   secondary: '#06B6D4',

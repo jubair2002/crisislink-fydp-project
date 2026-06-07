@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 
 interface IncomingTaskPopupProps {
   visible: boolean;
@@ -15,6 +17,47 @@ interface IncomingTaskPopupProps {
   timeoutSeconds?: number;
 }
 
+const createStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: c.overlay,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 20,
+    },
+    card: {
+      width: '100%',
+      backgroundColor: c.card,
+      borderRadius: 16,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      gap: 10,
+    },
+    header: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
+    headerTitle: { fontSize: 16, fontWeight: '800', color: c.textPrimary },
+    row: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
+    label: { color: c.textSecondary, fontSize: 13 },
+    value: { color: c.textPrimary, fontSize: 13, fontWeight: '700', textTransform: 'capitalize' },
+    timerText: { marginTop: 8, textAlign: 'center', color: c.danger, fontWeight: '700' },
+    actions: { marginTop: 8, flexDirection: 'row', gap: 10 },
+    btn: {
+      flex: 1,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 11,
+    },
+    declineBtn: {
+      backgroundColor: c.dangerSurface,
+      borderWidth: 1,
+      borderColor: c.dangerSurfaceBorder,
+    },
+    acceptBtn: { backgroundColor: c.primary },
+    btnText: { fontSize: 14, fontWeight: '800' },
+  });
+
 export default function IncomingTaskPopup({
   visible,
   disasterType,
@@ -26,6 +69,8 @@ export default function IncomingTaskPopup({
   onTimeout,
   timeoutSeconds = 30,
 }: IncomingTaskPopupProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [secondsLeft, setSecondsLeft] = useState(timeoutSeconds);
 
   useEffect(() => {
@@ -45,18 +90,18 @@ export default function IncomingTaskPopup({
 
   const severityColor = useMemo(() => {
     const s = severity.toLowerCase();
-    if (s === 'critical') return '#B91C1C';
-    if (s === 'high') return '#DC2626';
-    if (s === 'medium') return '#D97706';
-    return '#15803D';
-  }, [severity]);
+    if (s === 'critical') return colors.danger;
+    if (s === 'high') return colors.accent;
+    if (s === 'medium') return colors.warning;
+    return colors.success;
+  }, [severity, colors]);
 
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.backdrop}>
         <View style={styles.card}>
           <View style={styles.header}>
-            <Ionicons name="flash-outline" size={20} color="#B91C1C" />
+            <Ionicons name="flash-outline" size={20} color={colors.danger} />
             <Text style={styles.headerTitle}>Incoming emergency task</Text>
           </View>
 
@@ -85,10 +130,10 @@ export default function IncomingTaskPopup({
 
           <View style={styles.actions}>
             <TouchableOpacity style={[styles.btn, styles.declineBtn]} onPress={onDecline}>
-              <Text style={[styles.btnText, { color: '#991B1B' }]}>Decline</Text>
+              <Text style={[styles.btnText, { color: colors.danger }]}>Decline</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.btn, styles.acceptBtn]} onPress={onAccept}>
-              <Text style={[styles.btnText, { color: '#FFFFFF' }]}>Accept</Text>
+              <Text style={[styles.btnText, { color: colors.onPrimary }]}>Accept</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -96,39 +141,3 @@ export default function IncomingTaskPopup({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(2,6,23,0.65)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  card: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 10,
-  },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
-  headerTitle: { fontSize: 16, fontWeight: '800', color: Colors.textPrimary },
-  row: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
-  label: { color: Colors.textSecondary, fontSize: 13 },
-  value: { color: Colors.textPrimary, fontSize: 13, fontWeight: '700', textTransform: 'capitalize' },
-  timerText: { marginTop: 8, textAlign: 'center', color: '#B91C1C', fontWeight: '700' },
-  actions: { marginTop: 8, flexDirection: 'row', gap: 10 },
-  btn: {
-    flex: 1,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 11,
-  },
-  declineBtn: { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' },
-  acceptBtn: { backgroundColor: Colors.primary },
-  btnText: { fontSize: 14, fontWeight: '800' },
-});

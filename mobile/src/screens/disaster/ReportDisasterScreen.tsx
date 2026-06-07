@@ -2,7 +2,6 @@ import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ScrollView,
   Modal,
@@ -11,7 +10,6 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
-  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,19 +18,158 @@ import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Colors } from '../../constants/colors';
+import type { ThemeColors } from '../../constants/themes';
 import { DISASTER_TYPE_OPTIONS, type DisasterType } from '../../types/profile';
 import { Input } from '../../components/Input';
-import { disasterStyles } from './disasterStyles';
+import { useDisasterStyles } from './disasterStyles';
 import { createReport, getDuplicateNearby, uploadMedia } from '../../services/disasterService';
 import type { DisasterRow } from '../../types/disaster';
 import { useAuthStore } from '../../store/authStore';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
 
 type Severity = 'low' | 'medium' | 'high' | 'critical';
 
 const SEVERITY_ORDER: Severity[] = ['low', 'medium', 'high', 'critical'];
 
+const createStyles = (c: ThemeColors) => ({
+  dropdown: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    borderWidth: 1,
+    borderColor: c.inputBorder,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    backgroundColor: c.inputBg,
+    marginBottom: 4,
+  },
+  dropdownText: { fontSize: 15, fontWeight: '600' as const, color: c.textPrimary },
+  locRow: { flexDirection: 'row' as const, gap: 10 },
+
+  segment: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    gap: 8,
+    marginBottom: 8,
+  },
+  segChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: c.inputBorder,
+    backgroundColor: c.inputBg,
+  },
+  segChipOn: {
+    borderColor: c.primary,
+    backgroundColor: c.primarySurface,
+  },
+  segLabel: { fontSize: 13, fontWeight: '600' as const, color: c.textSecondary },
+  segLabelOn: { color: c.primary },
+
+  mediaActions: { flexDirection: 'row' as const, gap: 10, marginBottom: 12 },
+  mediaBtn: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: c.border,
+    backgroundColor: c.card,
+  },
+  mediaBtnText: { fontSize: 14, fontWeight: '700' as const, color: c.primary },
+
+  thumbRow: { marginBottom: 12 },
+  thumbWrap: { marginRight: 10 },
+  thumb: { width: 88, height: 88, borderRadius: 12 },
+  thumbX: {
+    position: 'absolute' as const,
+    top: -6,
+    right: -6,
+    backgroundColor: c.overlay,
+    borderRadius: 12,
+  },
+
+  videoBadge: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: c.primarySurface,
+    marginBottom: 12,
+  },
+  videoBadgeText: { flex: 1, fontSize: 14, fontWeight: '600' as const, color: c.textPrimary },
+  removeVid: { fontSize: 14, fontWeight: '700' as const, color: c.danger },
+
+  progressOuter: {
+    height: 8,
+    borderRadius: 6,
+    backgroundColor: c.skeleton,
+    overflow: 'hidden' as const,
+    marginBottom: 14,
+  },
+  progressInner: {
+    height: '100%' as const,
+    backgroundColor: c.primary,
+    borderRadius: 6,
+  },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: c.overlay,
+    justifyContent: 'flex-end' as const,
+    paddingBottom: 24,
+  },
+  modalSheet: {
+    marginHorizontal: 16,
+    backgroundColor: c.card,
+    borderRadius: 16,
+    padding: 16,
+    maxHeight: '70%' as const,
+  },
+  modalTitle: { fontSize: 17, fontWeight: '800' as const, color: c.textPrimary, marginBottom: 12 },
+  modalRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+  },
+  modalRowOn: { backgroundColor: c.primarySurface },
+  modalRowText: { flex: 1, fontSize: 15, fontWeight: '600' as const, color: c.textPrimary },
+
+  dupBackdrop: {
+    flex: 1,
+    backgroundColor: c.overlay,
+    justifyContent: 'center' as const,
+    padding: 24,
+  },
+  dupCard: {
+    backgroundColor: c.card,
+    borderRadius: 18,
+    padding: 22,
+    gap: 14,
+  },
+  dupTitle: { fontSize: 18, fontWeight: '800' as const, color: c.textPrimary, textAlign: 'center' as const },
+  dupBody: { fontSize: 14, color: c.textSecondary, lineHeight: 21, textAlign: 'center' as const },
+  dupSecondary: { alignItems: 'center' as const, paddingVertical: 8 },
+  dupSecondaryText: { fontSize: 15, fontWeight: '700' as const, color: c.primary },
+
+  fieldErr: { color: c.danger, fontSize: 12, marginBottom: 6, marginLeft: 4 },
+});
+
 export default function ReportDisasterScreen() {
+  const disasterStyles = useDisasterStyles();
+  const styles = useThemedStyles(createStyles);
+  const { colors, primaryGradient } = useTheme();
+
   const user = useAuthStore((s) => s.user);
   const params = useLocalSearchParams<{ pickedLat?: string; pickedLng?: string }>();
 
@@ -222,11 +359,9 @@ export default function ReportDisasterScreen() {
 
   return (
     <SafeAreaView style={disasterStyles.screenBgWhite} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
       <View style={disasterStyles.headerRow}>
         <TouchableOpacity onPress={() => router.back()} style={disasterStyles.backBtn}>
-          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
+          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={disasterStyles.headerTitle}>Report disaster</Text>
       </View>
@@ -249,7 +384,7 @@ export default function ReportDisasterScreen() {
           <Text style={disasterStyles.sectionLabel}>Disaster type</Text>
           <TouchableOpacity style={styles.dropdown} onPress={() => setTypeModalOpen(true)}>
             <Text style={styles.dropdownText}>{labelForType(disasterType)}</Text>
-            <Ionicons name="chevron-down" size={20} color="#94A3B8" />
+            <Ionicons name="chevron-down" size={20} color={colors.chevron} />
           </TouchableOpacity>
 
           <Text style={[disasterStyles.sectionLabel, { marginTop: 8 }]}>Location</Text>
@@ -264,10 +399,10 @@ export default function ReportDisasterScreen() {
               disabled={loadingLoc}
             >
               {loadingLoc ? (
-                <ActivityIndicator color={Colors.primary} />
+                <ActivityIndicator color={colors.primary} />
               ) : (
                 <>
-                  <Ionicons name="navigate-outline" size={18} color={Colors.primary} />
+                  <Ionicons name="navigate-outline" size={18} color={colors.primary} />
                   <Text style={disasterStyles.outlineBtnText}>Use my location</Text>
                 </>
               )}
@@ -275,7 +410,7 @@ export default function ReportDisasterScreen() {
           </View>
 
           <TouchableOpacity style={[disasterStyles.outlineBtn, { marginTop: 10 }]} onPress={openMapPicker}>
-            <Ionicons name="map-outline" size={18} color={Colors.primary} />
+            <Ionicons name="map-outline" size={18} color={colors.primary} />
             <Text style={disasterStyles.outlineBtnText}>Pick on map</Text>
           </TouchableOpacity>
 
@@ -324,11 +459,11 @@ export default function ReportDisasterScreen() {
 
           <View style={styles.mediaActions}>
             <TouchableOpacity style={styles.mediaBtn} onPress={pickPhotos} disabled={!!videoUri}>
-              <Ionicons name="images-outline" size={20} color={Colors.primary} />
+              <Ionicons name="images-outline" size={20} color={colors.primary} />
               <Text style={styles.mediaBtnText}>Add photos</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.mediaBtn} onPress={pickVideo} disabled={photos.length > 0}>
-              <Ionicons name="videocam-outline" size={20} color={Colors.primary} />
+              <Ionicons name="videocam-outline" size={20} color={colors.primary} />
               <Text style={styles.mediaBtnText}>Add video</Text>
             </TouchableOpacity>
           </View>
@@ -339,7 +474,7 @@ export default function ReportDisasterScreen() {
                 <View key={uri + idx} style={styles.thumbWrap}>
                   <Image source={{ uri }} style={styles.thumb} />
                   <TouchableOpacity style={styles.thumbX} onPress={() => removePhotoAt(idx)}>
-                    <Ionicons name="close-circle" size={22} color="#FFFFFF" />
+                    <Ionicons name="close-circle" size={22} color={colors.onPrimary} />
                   </TouchableOpacity>
                 </View>
               ))}
@@ -348,7 +483,7 @@ export default function ReportDisasterScreen() {
 
           {videoUri ? (
             <View style={styles.videoBadge}>
-              <Ionicons name="film-outline" size={18} color={Colors.primary} />
+              <Ionicons name="film-outline" size={18} color={colors.primary} />
               <Text style={styles.videoBadgeText}>1 video selected</Text>
               <TouchableOpacity onPress={() => setVideoUri(null)}>
                 <Text style={styles.removeVid}>Remove</Text>
@@ -368,9 +503,9 @@ export default function ReportDisasterScreen() {
             disabled={submitting}
             activeOpacity={0.88}
           >
-            <LinearGradient colors={['#2563EB', '#1D4ED8']} style={disasterStyles.primaryBtnGradientWrap}>
+            <LinearGradient colors={primaryGradient} style={disasterStyles.primaryBtnGradientWrap}>
               {submitting ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={colors.onPrimary} />
               ) : (
                 <Text style={disasterStyles.primaryBtnText}>Submit report</Text>
               )}
@@ -392,10 +527,10 @@ export default function ReportDisasterScreen() {
                   setTypeModalOpen(false);
                 }}
               >
-                <Ionicons name={opt.icon as React.ComponentProps<typeof Ionicons>['name']} size={20} color={Colors.primary} />
+                <Ionicons name={opt.icon as React.ComponentProps<typeof Ionicons>['name']} size={20} color={colors.primary} />
                 <Text style={styles.modalRowText}>{opt.label}</Text>
                 {disasterType === opt.value ? (
-                  <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
+                  <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
                 ) : null}
               </TouchableOpacity>
             ))}
@@ -406,7 +541,7 @@ export default function ReportDisasterScreen() {
       <Modal visible={dupModalOpen} transparent animationType="fade">
         <View style={styles.dupBackdrop}>
           <View style={styles.dupCard}>
-            <Ionicons name="warning-outline" size={40} color={Colors.warning} style={{ alignSelf: 'center' }} />
+            <Ionicons name="warning-outline" size={40} color={colors.warning} style={{ alignSelf: 'center' }} />
             <Text style={styles.dupTitle}>Similar report nearby</Text>
             <Text style={styles.dupBody}>
               A similar disaster was already reported nearby in the last 30 minutes. Do you want to add to that
@@ -419,7 +554,7 @@ export default function ReportDisasterScreen() {
                 if (duplicateRow?.id) router.replace(`/(main)/disasters/detail/${duplicateRow.id}`);
               }}
             >
-              <LinearGradient colors={['#2563EB', '#1D4ED8']} style={disasterStyles.primaryBtnGradientWrap}>
+              <LinearGradient colors={primaryGradient} style={disasterStyles.primaryBtnGradientWrap}>
                 <Text style={disasterStyles.primaryBtnText}>View existing</Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -433,136 +568,3 @@ export default function ReportDisasterScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  dropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    backgroundColor: '#F8FAFC',
-    marginBottom: 4,
-  },
-  dropdownText: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary },
-  locRow: { flexDirection: 'row', gap: 10 },
-
-  segment: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 8,
-  },
-  segChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
-  },
-  segChipOn: {
-    borderColor: Colors.primary,
-    backgroundColor: '#EFF6FF',
-  },
-  segLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
-  segLabelOn: { color: Colors.primary },
-
-  mediaActions: { flexDirection: 'row', gap: 10, marginBottom: 12 },
-  mediaBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-  },
-  mediaBtnText: { fontSize: 14, fontWeight: '700', color: Colors.primary },
-
-  thumbRow: { marginBottom: 12 },
-  thumbWrap: { marginRight: 10 },
-  thumb: { width: 88, height: 88, borderRadius: 12 },
-  thumbX: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderRadius: 12,
-  },
-
-  videoBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: '#EFF6FF',
-    marginBottom: 12,
-  },
-  videoBadgeText: { flex: 1, fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
-  removeVid: { fontSize: 14, fontWeight: '700', color: Colors.danger },
-
-  progressOuter: {
-    height: 8,
-    borderRadius: 6,
-    backgroundColor: '#E2E8F0',
-    overflow: 'hidden',
-    marginBottom: 14,
-  },
-  progressInner: {
-    height: '100%',
-    backgroundColor: Colors.primary,
-    borderRadius: 6,
-  },
-
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(15,23,42,0.45)',
-    justifyContent: 'flex-end',
-    paddingBottom: 24,
-  },
-  modalSheet: {
-    marginHorizontal: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    maxHeight: '70%',
-  },
-  modalTitle: { fontSize: 17, fontWeight: '800', color: Colors.textPrimary, marginBottom: 12 },
-  modalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-  },
-  modalRowOn: { backgroundColor: '#EFF6FF' },
-  modalRowText: { flex: 1, fontSize: 15, fontWeight: '600', color: Colors.textPrimary },
-
-  dupBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(15,23,42,0.5)',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  dupCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 22,
-    gap: 14,
-  },
-  dupTitle: { fontSize: 18, fontWeight: '800', color: Colors.textPrimary, textAlign: 'center' },
-  dupBody: { fontSize: 14, color: Colors.textSecondary, lineHeight: 21, textAlign: 'center' },
-  dupSecondary: { alignItems: 'center', paddingVertical: 8 },
-  dupSecondaryText: { fontSize: 15, fontWeight: '700', color: Colors.primary },
-
-  fieldErr: { color: Colors.danger, fontSize: 12, marginBottom: 6, marginLeft: 4 },
-});

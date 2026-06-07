@@ -2,18 +2,16 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   Image,
   RefreshControl,
-  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
-import { Colors } from '../../constants/colors';
+import type { ThemeColors } from '../../constants/themes';
 import { NotificationBellButton } from '../../components/NotificationBellButton';
 import { LatestBroadcastBanner } from '../../components/LatestBroadcastBanner';
 import { useAuthStore } from '../../store/authStore';
@@ -33,6 +31,8 @@ import {
 } from './homeShared';
 import { ExpandableServiceGrid, type HomeServiceItem } from './ExpandableServiceGrid';
 import { openGeneralChannel } from '../chat/openGeneralChannel';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
 
 const PAGE_PAD = 16;
 
@@ -54,7 +54,139 @@ const VOLUNTEER_SERVICES: HomeServiceItem[] = [
   { icon: 'flag-outline', label: 'Report', onPress: () => router.push('/(main)/report') },
 ];
 
+const createStyles = (c: ThemeColors) => ({
+  screen: { flex: 1, backgroundColor: c.background },
+  scrollContent: { paddingBottom: 28 },
+
+  headerStrip: {
+    backgroundColor: c.card,
+    marginHorizontal: PAGE_PAD,
+    marginTop: 6,
+    marginBottom: 14,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: c.border,
+  },
+  headerRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 12 },
+  headerTextCol: { flex: 1 },
+  brand: { fontSize: 11, fontWeight: '800' as const, color: c.primary, letterSpacing: 0.8 },
+  greeting: { fontSize: 17, fontWeight: '800' as const, color: c.textPrimary, marginTop: 2 },
+  avatar: { width: 44, height: 44, borderRadius: 22 },
+  avatarPh: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    backgroundColor: c.primarySurface,
+    borderWidth: 1,
+    borderColor: c.primarySurfaceBorder,
+  },
+  incompleteCard: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 12,
+    marginHorizontal: PAGE_PAD,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: c.card,
+    borderWidth: 1,
+    borderColor: c.warningSurfaceBorder,
+    marginBottom: 10,
+  },
+  incompleteTitle: { fontSize: 14, fontWeight: '700' as const, color: c.warning },
+  incompleteSub: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
+
+  volAlert: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+    gap: 10,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginHorizontal: PAGE_PAD,
+    marginBottom: 10,
+  },
+  volAlertText: { flex: 1, fontSize: 12, lineHeight: 17 },
+
+  locBanner: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
+    marginHorizontal: PAGE_PAD,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: c.card,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: c.border,
+  },
+  locBannerText: { flex: 1, fontSize: 13, color: c.textSecondary, fontWeight: '600' as const },
+
+  section: { marginBottom: 18, paddingHorizontal: PAGE_PAD },
+
+  emptyShell: {
+    backgroundColor: c.card,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: c.border,
+    overflow: 'hidden' as const,
+  },
+
+  taskBanner: {
+    backgroundColor: c.card,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: c.border,
+    borderLeftWidth: 4,
+    borderLeftColor: c.primary,
+  },
+  taskBannerTop: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 10 },
+  taskType: { fontSize: 15, fontWeight: '800' as const, color: c.textPrimary, flex: 1 },
+  taskLoc: { marginTop: 8, fontSize: 13, color: c.textSecondary },
+  viewTaskBtn: {
+    marginTop: 14,
+    alignSelf: 'flex-start' as const,
+    backgroundColor: c.primary,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  viewTaskBtnText: { color: c.onPrimary, fontWeight: '800' as const },
+
+  disCard: {
+    backgroundColor: c.card,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: c.border,
+  },
+  disTop: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const },
+  disMeta: { marginTop: 8, fontSize: 13, color: c.textSecondary },
+  needBadge: {
+    alignSelf: 'flex-start' as const,
+    marginTop: 10,
+    backgroundColor: c.warningSurface,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  needBadgeText: { fontSize: 11, fontWeight: '800' as const, color: c.warning },
+  respondBtn: {
+    marginTop: 12,
+    alignSelf: 'flex-start' as const,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: c.primary,
+  },
+  respondBtnText: { color: c.onPrimary, fontWeight: '800' as const },
+});
+
 export default function VolunteerHomeScreen() {
+  const styles = useThemedStyles(createStyles);
+  const { colors } = useTheme();
+
   const profile = useAuthStore((s) => s.profile);
   const user = useAuthStore((s) => s.user);
   const userId = user?.id ?? '';
@@ -187,13 +319,11 @@ export default function VolunteerHomeScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <StatusBar barStyle="dark-content" />
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
       >
         <View style={styles.headerStrip}>
@@ -203,7 +333,7 @@ export default function VolunteerHomeScreen() {
                 <Image source={{ uri: profile.profile_photo_url }} style={styles.avatar} />
               ) : (
                 <View style={[styles.avatar, styles.avatarPh]}>
-                  <Ionicons name="person" size={20} color={Colors.primary} />
+                  <Ionicons name="person" size={20} color={colors.primary} />
                 </View>
               )}
             </TouchableOpacity>
@@ -223,28 +353,28 @@ export default function VolunteerHomeScreen() {
             onPress={() => router.push('/(auth)/become-volunteer')}
             style={styles.incompleteCard}
           >
-            <Ionicons name="alert-circle" size={18} color={Colors.warning} />
+            <Ionicons name="alert-circle" size={18} color={colors.warning} />
             <View style={{ flex: 1 }}>
               <Text style={styles.incompleteTitle}>Complete your profile</Text>
               <Text style={styles.incompleteSub}>Finish onboarding to unlock assignments.</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            <Ionicons name="chevron-forward" size={18} color={colors.chevron} />
           </TouchableOpacity>
         ) : null}
 
         {!loadingVolunteer && volunteer?.verification_status === 'pending' ? (
-          <View style={[styles.volAlert, { borderColor: '#FDE68A', backgroundColor: Colors.card }]}>
-            <Ionicons name="time-outline" size={18} color={Colors.warning} />
-            <Text style={[styles.volAlertText, { color: '#92400E' }]}>
+          <View style={[styles.volAlert, { borderColor: colors.warningSurfaceBorder, backgroundColor: colors.card }]}>
+            <Ionicons name="time-outline" size={18} color={colors.warning} />
+            <Text style={[styles.volAlertText, { color: colors.warning }]}>
               Application under review. We will notify you when verified.
             </Text>
           </View>
         ) : null}
 
         {!loadingVolunteer && volunteer?.verification_status === 'rejected' ? (
-          <View style={[styles.volAlert, { borderColor: '#FECACA', backgroundColor: Colors.card }]}>
-            <Ionicons name="close-circle-outline" size={18} color={Colors.danger} />
-            <Text style={[styles.volAlertText, { color: '#991B1B' }]}>
+          <View style={[styles.volAlert, { borderColor: colors.dangerSurfaceBorder, backgroundColor: colors.card }]}>
+            <Ionicons name="close-circle-outline" size={18} color={colors.danger} />
+            <Text style={[styles.volAlertText, { color: colors.danger }]}>
               Application rejected. Update details and resubmit from profile.
             </Text>
           </View>
@@ -252,7 +382,7 @@ export default function VolunteerHomeScreen() {
 
         {permissionDenied ? (
           <View style={styles.locBanner}>
-            <Ionicons name="location-outline" size={18} color={Colors.primary} />
+            <Ionicons name="location-outline" size={18} color={colors.primary} />
             <Text style={styles.locBannerText}>Turn on location for nearby missions.</Text>
           </View>
         ) : null}
@@ -303,7 +433,7 @@ export default function VolunteerHomeScreen() {
               {nearbyDisasters.slice(0, 5).map((d) => (
                 <View key={d.id} style={styles.disCard}>
                   <View style={styles.disTop}>
-                    <Ionicons name={disasterIcon(String(d.disaster_type))} size={22} color={Colors.primary} />
+                    <Ionicons name={disasterIcon(String(d.disaster_type))} size={22} color={colors.primary} />
                     <SeverityBadge severity={d.severity} />
                   </View>
                   <Text style={styles.disMeta}>
@@ -328,132 +458,3 @@ export default function VolunteerHomeScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: Colors.background },
-  scrollContent: { paddingBottom: 28 },
-
-  headerStrip: {
-    backgroundColor: Colors.card,
-    marginHorizontal: PAGE_PAD,
-    marginTop: 6,
-    marginBottom: 14,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerTextCol: { flex: 1 },
-  brand: { fontSize: 11, fontWeight: '800', color: Colors.primary, letterSpacing: 0.8 },
-  greeting: { fontSize: 17, fontWeight: '800', color: Colors.textPrimary, marginTop: 2 },
-  avatar: { width: 44, height: 44, borderRadius: 22 },
-  avatarPh: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  incompleteCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginHorizontal: PAGE_PAD,
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: Colors.card,
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    marginBottom: 10,
-  },
-  incompleteTitle: { fontSize: 14, fontWeight: '700', color: '#92400E' },
-  incompleteSub: { fontSize: 12, color: '#A16207', marginTop: 2 },
-
-  volAlert: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    padding: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    marginHorizontal: PAGE_PAD,
-    marginBottom: 10,
-  },
-  volAlertText: { flex: 1, fontSize: 12, lineHeight: 17 },
-
-  locBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginHorizontal: PAGE_PAD,
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: Colors.card,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  locBannerText: { flex: 1, fontSize: 13, color: Colors.textSecondary, fontWeight: '600' },
-
-  section: { marginBottom: 18, paddingHorizontal: PAGE_PAD },
-
-  emptyShell: {
-    backgroundColor: Colors.card,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    overflow: 'hidden',
-  },
-
-  taskBanner: {
-    backgroundColor: Colors.card,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderLeftWidth: 4,
-    borderLeftColor: Colors.primary,
-  },
-  taskBannerTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  taskType: { fontSize: 15, fontWeight: '800', color: Colors.textPrimary, flex: 1 },
-  taskLoc: { marginTop: 8, fontSize: 13, color: Colors.textSecondary },
-  viewTaskBtn: {
-    marginTop: 14,
-    alignSelf: 'flex-start',
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  viewTaskBtnText: { color: '#FFFFFF', fontWeight: '800' },
-
-  disCard: {
-    backgroundColor: Colors.card,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  disTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  disMeta: { marginTop: 8, fontSize: 13, color: Colors.textSecondary },
-  needBadge: {
-    alignSelf: 'flex-start',
-    marginTop: 10,
-    backgroundColor: '#FFEDD5',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  needBadgeText: { fontSize: 11, fontWeight: '800', color: '#9A3412' },
-  respondBtn: {
-    marginTop: 12,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: Colors.primary,
-  },
-  respondBtnText: { color: '#FFFFFF', fontWeight: '800' },
-});

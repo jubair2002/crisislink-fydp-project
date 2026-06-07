@@ -13,7 +13,6 @@ import {
   Alert,
   ActionSheetIOS,
   Linking,
-  StatusBar,
   Keyboard,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,7 +21,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { useAuthStore } from '../../store/authStore';
 import { useChatStore } from '../../store/chatStore';
 import { useToastStore } from '../../store/toastStore';
@@ -76,7 +77,181 @@ function buildListItems(messages: Message[]): ListItem[] {
   return out;
 }
 
+const createStyles = (c: ThemeColors, isDark: boolean) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.background },
+    flex: { flex: 1 },
+    header: {
+      backgroundColor: c.background,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    headerSub: {
+      fontSize: 12,
+      color: c.textSecondary,
+      textAlign: 'center',
+      paddingHorizontal: 48,
+      paddingBottom: 8,
+      marginTop: -4,
+    },
+    infoBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: c.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    messageList: { flex: 1, backgroundColor: isDark ? c.dark : '#ECEFF4' },
+    msgList: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12, flexGrow: 1 },
+    msgListEmpty: { flex: 1, justifyContent: 'center' },
+    loadMore: { alignItems: 'center', paddingVertical: 12 },
+    loadMoreText: { color: c.primary, fontWeight: '600', fontSize: 13 },
+    datePillWrap: { alignItems: 'center', marginVertical: 12 },
+    datePill: {
+      backgroundColor: isDark ? c.elevated : 'rgba(255,255,255,0.92)',
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+      borderRadius: 10,
+    },
+    datePillText: { fontSize: 12, fontWeight: '600', color: c.textSecondary },
+    msgRow: { flexDirection: 'row', marginBottom: 8, maxWidth: '85%' },
+    msgRowMine: { alignSelf: 'flex-end' },
+    msgRowOther: { alignSelf: 'flex-start' },
+    avatar: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: c.iconMuted,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 8,
+      marginTop: 4,
+      overflow: 'hidden',
+    },
+    avatarImg: { width: 32, height: 32 },
+    bubble: {
+      borderRadius: 18,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      maxWidth: '100%',
+      shadowColor: c.shadow,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.06,
+      shadowRadius: 2,
+      elevation: 1,
+    },
+    bubbleMine: {
+      backgroundColor: c.primary,
+      borderBottomRightRadius: 4,
+    },
+    bubbleOther: {
+      backgroundColor: c.elevated,
+      borderBottomLeftRadius: 4,
+    },
+    senderName: { fontSize: 12, fontWeight: '700', color: c.primary, marginBottom: 4 },
+    msgText: { fontSize: 16, color: c.textPrimary, lineHeight: 22 },
+    msgTextMine: { color: c.onPrimary },
+    msgImage: { width: 220, height: 160, borderRadius: 12, marginBottom: 4 },
+    locationCard: { gap: 4, paddingVertical: 4, minWidth: 160 },
+    locationText: { fontSize: 14, fontWeight: '600', color: c.textPrimary },
+    locationTextMine: { color: c.onPrimary },
+    locationTap: { fontSize: 12, color: c.textSecondary },
+    locationTapMine: { color: 'rgba(255,255,255,0.75)' },
+    msgMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, alignSelf: 'flex-end' },
+    msgTime: { fontSize: 11, color: c.chevron },
+    msgTimeMine: { color: 'rgba(255,255,255,0.75)' },
+    emptyChat: { alignItems: 'center', paddingVertical: 40, gap: 8 },
+    emptyIcon: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: c.elevated,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 4,
+    },
+    emptyTitle: { fontSize: 17, fontWeight: '800', color: c.textPrimary },
+    emptySub: { fontSize: 14, color: c.textSecondary, textAlign: 'center' },
+    draftPreview: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'flex-end',
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      paddingBottom: 4,
+      backgroundColor: isDark ? c.dark : '#ECEFF4',
+      gap: 8,
+    },
+    draftBubble: {
+      maxWidth: '78%',
+      backgroundColor: c.primary,
+      opacity: 0.55,
+      borderRadius: 18,
+      borderBottomRightRadius: 4,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+    },
+    draftText: { fontSize: 16, color: c.onPrimary, lineHeight: 22 },
+    draftHint: { fontSize: 11, color: c.textSecondary, paddingBottom: 6 },
+    composer: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      paddingHorizontal: 10,
+      paddingTop: 10,
+      backgroundColor: c.background,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      gap: 6,
+    },
+    toolBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: c.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 2,
+    },
+    inputWrap: {
+      flex: 1,
+      minHeight: 44,
+      maxHeight: 130,
+      borderRadius: 22,
+      backgroundColor: c.inputBg,
+      borderWidth: 1.5,
+      borderColor: 'transparent',
+      justifyContent: 'center',
+    },
+    inputWrapFocused: {
+      borderColor: c.primary,
+      backgroundColor: c.elevated,
+    },
+    input: {
+      paddingHorizontal: 16,
+      paddingVertical: Platform.OS === 'ios' ? 12 : 10,
+      fontSize: 16,
+      lineHeight: 22,
+      color: c.textPrimary,
+      maxHeight: 120,
+      textAlignVertical: 'center',
+    },
+    sendBtn: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 0,
+    },
+    sendBtnActive: { backgroundColor: c.primary },
+    sendBtnDisabled: { backgroundColor: c.iconMuted },
+  });
+
 export default function ChatRoomScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { id: chatIdParam } = useLocalSearchParams<{ id: string }>();
   const chatId = String(chatIdParam ?? '');
   const user = useAuthStore((s) => s.user);
@@ -342,7 +517,7 @@ export default function ChatRoomScreen() {
             {item.sender?.profile_photo_url ? (
               <Image source={{ uri: item.sender.profile_photo_url }} style={styles.avatarImg} />
             ) : (
-              <Ionicons name="person" size={16} color={Colors.textSecondary} />
+              <Ionicons name="person" size={16} color={colors.textSecondary} />
             )}
           </View>
         ) : null}
@@ -362,7 +537,7 @@ export default function ChatRoomScreen() {
               }
             >
               <View style={styles.locationCard}>
-                <Ionicons name="location" size={24} color={isMine ? '#FFF' : Colors.primary} />
+                <Ionicons name="location" size={24} color={isMine ? colors.onPrimary : colors.primary} />
                 <Text style={[styles.locationText, isMine && styles.locationTextMine]}>
                   Shared location
                 </Text>
@@ -414,7 +589,6 @@ export default function ChatRoomScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
       <View style={styles.header}>
         <ChatTopBar
           title={chat?.name ?? 'Chat'}
@@ -425,7 +599,7 @@ export default function ChatRoomScreen() {
               onPress={() => router.push(`/(main)/chat/info/${chatId}`)}
               hitSlop={10}
             >
-              <Ionicons name="information-circle-outline" size={24} color={Colors.textPrimary} />
+              <Ionicons name="information-circle-outline" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
           }
         />
@@ -438,7 +612,7 @@ export default function ChatRoomScreen() {
 
       {initialLoading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <KeyboardAvoidingView
@@ -465,7 +639,7 @@ export default function ChatRoomScreen() {
               hasMore ? (
                 <TouchableOpacity style={styles.loadMore} onPress={loadOlder} disabled={loadingMore}>
                   {loadingMore ? (
-                    <ActivityIndicator size="small" color={Colors.primary} />
+                    <ActivityIndicator size="small" color={colors.primary} />
                   ) : (
                     <Text style={styles.loadMoreText}>Load older messages</Text>
                   )}
@@ -475,7 +649,7 @@ export default function ChatRoomScreen() {
             ListEmptyComponent={
               <View style={styles.emptyChat}>
                 <View style={styles.emptyIcon}>
-                  <Ionicons name="chatbubble-ellipses-outline" size={36} color={Colors.primary} />
+                  <Ionicons name="chatbubble-ellipses-outline" size={36} color={colors.primary} />
                 </View>
                 <Text style={styles.emptyTitle}>No messages yet</Text>
                 <Text style={styles.emptySub}>Say hello — your message will appear here.</Text>
@@ -483,7 +657,6 @@ export default function ChatRoomScreen() {
             }
           />
 
-          {/* Live draft preview while typing */}
           {input.trim().length > 0 ? (
             <View style={styles.draftPreview}>
               <View style={styles.draftBubble}>
@@ -497,10 +670,10 @@ export default function ChatRoomScreen() {
 
           <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
             <TouchableOpacity onPress={handlePickImage} style={styles.toolBtn} disabled={sending}>
-              <Ionicons name="image-outline" size={22} color={Colors.primary} />
+              <Ionicons name="image-outline" size={22} color={colors.primary} />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleShareLocation} style={styles.toolBtn} disabled={sending}>
-              <Ionicons name="location-outline" size={22} color={Colors.primary} />
+              <Ionicons name="location-outline" size={22} color={colors.primary} />
             </TouchableOpacity>
             <View style={[styles.inputWrap, inputFocused && styles.inputWrapFocused]}>
               <TextInput
@@ -514,10 +687,10 @@ export default function ChatRoomScreen() {
                 }}
                 onBlur={() => setInputFocused(false)}
                 placeholder="Message…"
-                placeholderTextColor="#64748B"
+                placeholderTextColor={colors.textSecondary}
                 multiline
                 maxLength={4000}
-                selectionColor={Colors.primary}
+                selectionColor={colors.primary}
                 underlineColorAndroid="transparent"
               />
             </View>
@@ -527,9 +700,9 @@ export default function ChatRoomScreen() {
               disabled={!canSend}
             >
               {sending ? (
-                <ActivityIndicator size="small" color="#FFF" />
+                <ActivityIndicator size="small" color={colors.onPrimary} />
               ) : (
-                <Ionicons name="send" size={18} color="#FFF" />
+                <Ionicons name="send" size={18} color={colors.onPrimary} />
               )}
             </TouchableOpacity>
           </View>
@@ -538,174 +711,3 @@ export default function ChatRoomScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFF' },
-  flex: { flex: 1 },
-  header: {
-    backgroundColor: '#FFF',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E2E8F0',
-  },
-  headerSub: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    paddingHorizontal: 48,
-    paddingBottom: 8,
-    marginTop: -4,
-  },
-  infoBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  messageList: { flex: 1, backgroundColor: '#ECEFF4' },
-  msgList: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 12, flexGrow: 1 },
-  msgListEmpty: { flex: 1, justifyContent: 'center' },
-  loadMore: { alignItems: 'center', paddingVertical: 12 },
-  loadMoreText: { color: Colors.primary, fontWeight: '600', fontSize: 13 },
-  datePillWrap: { alignItems: 'center', marginVertical: 12 },
-  datePill: {
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  datePillText: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary },
-  msgRow: { flexDirection: 'row', marginBottom: 8, maxWidth: '85%' },
-  msgRowMine: { alignSelf: 'flex-end' },
-  msgRowOther: { alignSelf: 'flex-start' },
-  avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#CBD5E1',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-    marginTop: 4,
-    overflow: 'hidden',
-  },
-  avatarImg: { width: 32, height: 32 },
-  bubble: {
-    borderRadius: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    maxWidth: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  bubbleMine: {
-    backgroundColor: Colors.primary,
-    borderBottomRightRadius: 4,
-  },
-  bubbleOther: {
-    backgroundColor: '#FFF',
-    borderBottomLeftRadius: 4,
-  },
-  senderName: { fontSize: 12, fontWeight: '700', color: Colors.primary, marginBottom: 4 },
-  msgText: { fontSize: 16, color: Colors.textPrimary, lineHeight: 22 },
-  msgTextMine: { color: '#FFF' },
-  msgImage: { width: 220, height: 160, borderRadius: 12, marginBottom: 4 },
-  locationCard: { gap: 4, paddingVertical: 4, minWidth: 160 },
-  locationText: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
-  locationTextMine: { color: '#FFF' },
-  locationTap: { fontSize: 12, color: Colors.textSecondary },
-  locationTapMine: { color: 'rgba(255,255,255,0.75)' },
-  msgMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, alignSelf: 'flex-end' },
-  msgTime: { fontSize: 11, color: '#94A3B8' },
-  msgTimeMine: { color: 'rgba(255,255,255,0.75)' },
-  emptyChat: { alignItems: 'center', paddingVertical: 40, gap: 8 },
-  emptyIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#FFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  emptyTitle: { fontSize: 17, fontWeight: '800', color: Colors.textPrimary },
-  emptySub: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center' },
-  draftPreview: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 4,
-    backgroundColor: '#ECEFF4',
-    gap: 8,
-  },
-  draftBubble: {
-    maxWidth: '78%',
-    backgroundColor: Colors.primary,
-    opacity: 0.55,
-    borderRadius: 18,
-    borderBottomRightRadius: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  draftText: { fontSize: 16, color: '#FFF', lineHeight: 22 },
-  draftHint: { fontSize: 11, color: Colors.textSecondary, paddingBottom: 6 },
-  composer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    backgroundColor: '#FFF',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E2E8F0',
-    gap: 6,
-  },
-  toolBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 2,
-  },
-  inputWrap: {
-    flex: 1,
-    minHeight: 44,
-    maxHeight: 130,
-    borderRadius: 22,
-    backgroundColor: '#F1F5F9',
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-    justifyContent: 'center',
-  },
-  inputWrapFocused: {
-    borderColor: Colors.primary,
-    backgroundColor: '#FFF',
-  },
-  input: {
-    paddingHorizontal: 16,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 10,
-    fontSize: 16,
-    lineHeight: 22,
-    color: '#0F172A',
-    maxHeight: 120,
-    textAlignVertical: 'center',
-  },
-  sendBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 0,
-  },
-  sendBtnActive: { backgroundColor: Colors.primary },
-  sendBtnDisabled: { backgroundColor: '#CBD5E1' },
-});

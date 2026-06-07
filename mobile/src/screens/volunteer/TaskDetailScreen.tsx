@@ -14,7 +14,9 @@ import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { MAP_DARK_STYLE, type ThemeColors } from '../../constants/themes';
 import { useAuthStore } from '../../store/authStore';
 import {
   completeTask,
@@ -29,7 +31,78 @@ interface TaskDetailScreenProps {
   onBack?: () => void;
 }
 
+const createStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.background },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    empty: { color: c.textSecondary },
+    scroll: { padding: 16, gap: 12, paddingBottom: 40 },
+    header: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    title: { fontSize: 23, fontWeight: '800', color: c.textPrimary },
+    subtitle: { color: c.textSecondary, textTransform: 'capitalize' },
+    iconBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: c.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    card: {
+      backgroundColor: c.card,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: 12,
+      gap: 6,
+    },
+    sectionTitle: { fontSize: 15, fontWeight: '800', color: c.textPrimary },
+    meta: { fontSize: 12, color: c.textSecondary, textTransform: 'capitalize' },
+    description: { marginTop: 4, fontSize: 13, color: c.textPrimary, lineHeight: 18 },
+    mapWrap: { height: 170, borderRadius: 14, overflow: 'hidden' },
+    map: { flex: 1 },
+    uploadBtn: {
+      marginTop: 4,
+      borderWidth: 1,
+      borderColor: c.primarySurfaceBorder,
+      borderRadius: 10,
+      backgroundColor: c.primarySurface,
+      padding: 10,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    uploadText: { color: c.primary, fontWeight: '700' },
+    preview: { marginTop: 8, width: '100%', height: 150, borderRadius: 10 },
+    noteInput: {
+      marginTop: 8,
+      borderWidth: 1,
+      borderColor: c.inputBorder,
+      borderRadius: 10,
+      backgroundColor: c.inputBg,
+      minHeight: 90,
+      padding: 10,
+      textAlignVertical: 'top',
+      color: c.textPrimary,
+    },
+    actions: { gap: 10, marginTop: 4 },
+    primaryBtn: { backgroundColor: c.primary, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
+    successBtn: { backgroundColor: c.success, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
+    primaryText: { color: c.onPrimary, fontWeight: '800' },
+    warnBtn: {
+      backgroundColor: c.warningSurface,
+      borderRadius: 10,
+      paddingVertical: 12,
+      alignItems: 'center',
+      borderColor: c.warningSurfaceBorder,
+      borderWidth: 1,
+    },
+    warnText: { color: c.warning, fontWeight: '800' },
+  });
+
 export default function TaskDetailScreen({ taskId, onBack }: TaskDetailScreenProps) {
+  const { colors, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const userId = useAuthStore((s) => s.user?.id ?? '');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -98,7 +171,7 @@ export default function TaskDetailScreen({ taskId, onBack }: TaskDetailScreenPro
     return (
       <SafeAreaView style={styles.root} edges={['top']}>
         <View style={styles.center}>
-          <ActivityIndicator color={Colors.primary} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -122,18 +195,18 @@ export default function TaskDetailScreen({ taskId, onBack }: TaskDetailScreenPro
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator
         persistentScrollbar
-        indicatorStyle="default"
+        indicatorStyle={isDark ? 'white' : 'default'}
       >
         <View style={styles.header}>
           <TouchableOpacity style={styles.iconBtn} onPress={() => (onBack ? onBack() : router.back())}>
-            <Ionicons name="chevron-back" size={20} color={Colors.textPrimary} />
+            <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>Task Detail</Text>
             <Text style={styles.subtitle}>{task.task.task_type.replace(/_/g, ' ')}</Text>
           </View>
           <TouchableOpacity style={styles.iconBtn} onPress={() => void load()}>
-            <Ionicons name="refresh" size={18} color={Colors.primary} />
+            <Ionicons name="refresh" size={18} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
@@ -152,6 +225,7 @@ export default function TaskDetailScreen({ taskId, onBack }: TaskDetailScreenPro
           <View style={styles.mapWrap}>
             <MapView
               style={styles.map}
+              customMapStyle={isDark ? MAP_DARK_STYLE : undefined}
               initialRegion={{
                 latitude: disaster.latitude,
                 longitude: disaster.longitude,
@@ -169,7 +243,7 @@ export default function TaskDetailScreen({ taskId, onBack }: TaskDetailScreenPro
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Completion Proof</Text>
           <TouchableOpacity style={styles.uploadBtn} onPress={pickProof}>
-            <Ionicons name="camera-outline" size={18} color={Colors.primary} />
+            <Ionicons name="camera-outline" size={18} color={colors.primary} />
             <Text style={styles.uploadText}>{proofUri ? 'Change photo' : 'Upload photo proof'}</Text>
           </TouchableOpacity>
           {proofUri && <Image source={{ uri: proofUri }} style={styles.preview} />}
@@ -178,6 +252,7 @@ export default function TaskDetailScreen({ taskId, onBack }: TaskDetailScreenPro
             value={note}
             onChangeText={setNote}
             placeholder="Add completion notes..."
+            placeholderTextColor={colors.textSecondary}
             multiline
           />
         </View>
@@ -201,70 +276,3 @@ export default function TaskDetailScreen({ taskId, onBack }: TaskDetailScreenPro
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  empty: { color: Colors.textSecondary },
-  scroll: { padding: 16, gap: 12, paddingBottom: 40 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  title: { fontSize: 23, fontWeight: '800', color: Colors.textPrimary },
-  subtitle: { color: Colors.textSecondary, textTransform: 'capitalize' },
-  iconBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 12,
-    gap: 6,
-  },
-  sectionTitle: { fontSize: 15, fontWeight: '800', color: Colors.textPrimary },
-  meta: { fontSize: 12, color: Colors.textSecondary, textTransform: 'capitalize' },
-  description: { marginTop: 4, fontSize: 13, color: Colors.textPrimary, lineHeight: 18 },
-  mapWrap: { height: 170, borderRadius: 14, overflow: 'hidden' },
-  map: { flex: 1 },
-  uploadBtn: {
-    marginTop: 4,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    borderRadius: 10,
-    backgroundColor: '#EFF6FF',
-    padding: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  uploadText: { color: Colors.primary, fontWeight: '700' },
-  preview: { marginTop: 8, width: '100%', height: 150, borderRadius: 10 },
-  noteInput: {
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-    minHeight: 90,
-    padding: 10,
-    textAlignVertical: 'top',
-  },
-  actions: { gap: 10, marginTop: 4 },
-  primaryBtn: { backgroundColor: Colors.primary, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
-  successBtn: { backgroundColor: Colors.success, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
-  primaryText: { color: '#FFFFFF', fontWeight: '800' },
-  warnBtn: {
-    backgroundColor: '#FFFBEB',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderColor: '#FCD34D',
-    borderWidth: 1,
-  },
-  warnText: { color: '#92400E', fontWeight: '800' },
-});

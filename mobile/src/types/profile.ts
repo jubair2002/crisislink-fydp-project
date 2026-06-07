@@ -40,6 +40,7 @@ export interface VolunteerProfile {
   volunteer_cert_url: string | null;
   org_proof_url: string | null;
   verification_status: VerificationStatus;
+  verification_rejection_reason?: string | null;
   volunteer_type: 'verified' | 'casual' | 'spontaneous';
   rating: number;
   tasks_completed: number;

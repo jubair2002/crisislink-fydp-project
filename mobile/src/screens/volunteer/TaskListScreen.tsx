@@ -3,7 +3,9 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View }
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { useAuthStore } from '../../store/authStore';
 import { getTasksForVolunteer, type TaskWithAssignment } from '../../services/taskService';
 
@@ -15,7 +17,58 @@ interface TaskListScreenProps {
   onOpenTask?: (taskId: string) => void;
 }
 
+const createStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.background },
+    header: {
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    title: { flex: 1, fontSize: 22, fontWeight: '800', color: c.textPrimary },
+    iconBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: c.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, marginTop: 12 },
+    filter: {
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      backgroundColor: c.card,
+    },
+    filterOn: { borderColor: c.primary, backgroundColor: c.primarySurface },
+    filterText: { textTransform: 'capitalize', color: c.textSecondary, fontWeight: '700', fontSize: 12 },
+    filterTextOn: { color: c.primary },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    empty: { color: c.textSecondary, textAlign: 'center', marginTop: 36 },
+    card: {
+      backgroundColor: c.card,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: 12,
+      gap: 5,
+    },
+    rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    disasterType: { fontSize: 15, fontWeight: '800', color: c.textPrimary, textTransform: 'capitalize' },
+    meta: { color: c.textSecondary, fontSize: 12 },
+    groupMeta: { color: c.primary, fontSize: 12, fontWeight: '700' },
+    badge: { backgroundColor: c.primarySurface, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },
+    badgeText: { fontSize: 11, fontWeight: '700', color: c.primary, textTransform: 'capitalize' },
+  });
+
 export default function TaskListScreen({ onBack, onOpenTask }: TaskListScreenProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const userId = useAuthStore((s) => s.user?.id ?? '');
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterValue>('all');
@@ -45,11 +98,11 @@ export default function TaskListScreen({ onBack, onOpenTask }: TaskListScreenPro
     <SafeAreaView style={styles.root} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.iconBtn} onPress={() => (onBack ? onBack() : router.back())}>
-          <Ionicons name="chevron-back" size={20} color={Colors.textPrimary} />
+          <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.title}>Volunteer Tasks</Text>
         <TouchableOpacity style={styles.iconBtn} onPress={() => void load()}>
-          <Ionicons name="refresh" size={18} color={Colors.primary} />
+          <Ionicons name="refresh" size={18} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -67,7 +120,7 @@ export default function TaskListScreen({ onBack, onOpenTask }: TaskListScreenPro
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color={Colors.primary} />
+          <ActivityIndicator color={colors.primary} />
         </View>
       ) : (
         <FlatList
@@ -111,51 +164,3 @@ export default function TaskListScreen({ onBack, onOpenTask }: TaskListScreenPro
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  title: { flex: 1, fontSize: 22, fontWeight: '800', color: Colors.textPrimary },
-  iconBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16, marginTop: 12 },
-  filter: {
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    backgroundColor: '#FFFFFF',
-  },
-  filterOn: { borderColor: Colors.primary, backgroundColor: '#EFF6FF' },
-  filterText: { textTransform: 'capitalize', color: Colors.textSecondary, fontWeight: '700', fontSize: 12 },
-  filterTextOn: { color: Colors.primary },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  empty: { color: Colors.textSecondary, textAlign: 'center', marginTop: 36 },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 12,
-    gap: 5,
-  },
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  disasterType: { fontSize: 15, fontWeight: '800', color: Colors.textPrimary, textTransform: 'capitalize' },
-  meta: { color: Colors.textSecondary, fontSize: 12 },
-  groupMeta: { color: Colors.primary, fontSize: 12, fontWeight: '700' },
-  badge: { backgroundColor: '#DBEAFE', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },
-  badgeText: { fontSize: 11, fontWeight: '700', color: '#1E3A8A', textTransform: 'capitalize' },
-});

@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  StatusBar,
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
@@ -12,11 +11,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { signInWithGoogle } from '../../services/authService';
 import { useAuthStore } from '../../store/authStore';
 
 export default function WelcomeScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -40,8 +43,6 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -73,12 +74,12 @@ export default function WelcomeScreen() {
           style={styles.primaryBtn}
         >
           <LinearGradient
-            colors={['#2563EB', '#1D4ED8']}
+            colors={[colors.primary, colors.primary]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.primaryBtnGradient}
           >
-            <Ionicons name="person-add-outline" size={18} color="#FFFFFF" />
+            <Ionicons name="person-add-outline" size={18} color={colors.onPrimary} />
             <Text style={styles.primaryBtnText}>Create Account</Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -104,7 +105,7 @@ export default function WelcomeScreen() {
           activeOpacity={0.85}
         >
           {googleLoading ? (
-            <ActivityIndicator size="small" color={Colors.textPrimary} />
+            <ActivityIndicator size="small" color={colors.textPrimary} />
           ) : (
             <>
               <Ionicons name="logo-google" size={18} color="#EA4335" />
@@ -123,27 +124,27 @@ export default function WelcomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
+const createStyles = (c: ThemeColors, _isDark: boolean) => ({
+  root: { flex: 1, backgroundColor: c.background },
 
   scrollContent: { paddingHorizontal: 24, paddingBottom: 24 },
 
   header: { paddingTop: 16, paddingBottom: 8 },
-  brandText: { fontSize: 17, fontWeight: '800', color: Colors.textPrimary, letterSpacing: 0.3 },
+  brandText: { fontSize: 17, fontWeight: '800', color: c.textPrimary, letterSpacing: 0.3 },
 
   hero: { paddingTop: 32, paddingBottom: 32 },
   heroTitle: {
     fontSize: 40,
     fontWeight: '800',
-    color: Colors.textPrimary,
+    color: c.textPrimary,
     lineHeight: 48,
     letterSpacing: -1,
     marginBottom: 16,
   },
-  heroAccent: { color: Colors.primary },
+  heroAccent: { color: c.primary },
   heroSubtitle: {
     fontSize: 15,
-    color: Colors.textSecondary,
+    color: c.textSecondary,
     lineHeight: 23,
   },
 
@@ -152,22 +153,22 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 16,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    backgroundColor: '#FFFFFF',
+    borderTopColor: c.border,
+    backgroundColor: c.background,
   },
 
   errorBox: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: c.dangerSurface,
     borderRadius: 10,
     padding: 10,
     marginBottom: 12,
   },
-  errorText: { color: Colors.danger, fontSize: 12 },
+  errorText: { color: c.danger, fontSize: 12 },
 
   primaryBtn: {
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: Colors.primary,
+    shadowColor: c.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 16,
@@ -181,17 +182,17 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 16,
   },
-  primaryBtnText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.3 },
+  primaryBtnText: { fontSize: 16, fontWeight: '700', color: c.onPrimary, letterSpacing: 0.3 },
 
   secondaryBtn: {
     paddingVertical: 14,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: c.border,
+    backgroundColor: c.card,
     alignItems: 'center',
   },
-  secondaryBtnText: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
+  secondaryBtnText: { fontSize: 15, fontWeight: '700', color: c.textPrimary },
 
   dividerRow: {
     flexDirection: 'row',
@@ -199,28 +200,28 @@ const styles = StyleSheet.create({
     gap: 10,
     marginVertical: 14,
   },
-  dividerLine: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
-  dividerText: { fontSize: 11, color: '#94A3B8', fontWeight: '600', letterSpacing: 0.4 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: c.border },
+  dividerText: { fontSize: 11, color: c.chevron, fontWeight: '600', letterSpacing: 0.4 },
 
   googleBtn: {
     flexDirection: 'row',
     paddingVertical: 14,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: c.border,
+    backgroundColor: c.card,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
   },
-  googleText: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary },
+  googleText: { fontSize: 15, fontWeight: '700', color: c.textPrimary },
 
   terms: {
     textAlign: 'center',
     fontSize: 11,
-    color: '#94A3B8',
+    color: c.chevron,
     lineHeight: 16,
     marginTop: 14,
   },
-  termsLink: { color: Colors.primary, fontWeight: '600' },
+  termsLink: { color: c.primary, fontWeight: '600' },
 });

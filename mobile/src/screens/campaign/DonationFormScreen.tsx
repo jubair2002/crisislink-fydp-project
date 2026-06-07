@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Switch,
   ActivityIndicator,
-  StatusBar,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -16,7 +15,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { HeaderGlassCircleButton } from '../../components/HeaderGlassCircleButton';
 import { Input } from '../../components/Input';
 import { useAuthStore } from '../../store/authStore';
@@ -28,6 +29,8 @@ import type { Campaign } from '../../types/campaign';
 const PRESETS = [100, 500, 1000, 5000];
 
 export default function DonationFormScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = useAuthStore((s) => s.user);
   const profile = useAuthStore((s) => s.profile);
@@ -115,7 +118,7 @@ export default function DonationFormScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -132,14 +135,13 @@ export default function DonationFormScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="dark-content" />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
           <HeaderGlassCircleButton onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />
+            <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
           </HeaderGlassCircleButton>
           <Text style={styles.headerTitle}>Donate</Text>
           <View style={{ width: 40 }} />
@@ -192,13 +194,14 @@ export default function DonationFormScreen() {
             <Switch
               value={anonymous}
               onValueChange={setAnonymous}
-              trackColor={{ true: Colors.primary, false: '#CBD5E1' }}
+              trackColor={{ true: colors.primary, false: colors.switchTrackOff }}
+              thumbColor={colors.switchThumb}
             />
           </View>
 
           {!user && (
             <View style={styles.guestNote}>
-              <Ionicons name="information-circle-outline" size={18} color={Colors.primary} />
+              <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
               <Text style={styles.guestNoteText}>
                 No login required. Save your tracking ID after payment to follow your donation.
               </Text>
@@ -211,10 +214,10 @@ export default function DonationFormScreen() {
             disabled={submitting}
           >
             {submitting ? (
-              <ActivityIndicator color="#FFF" />
+              <ActivityIndicator color={colors.onPrimary} />
             ) : (
               <>
-                <Ionicons name="lock-closed" size={18} color="#FFF" />
+                <Ionicons name="lock-closed" size={18} color={colors.onPrimary} />
                 <Text style={styles.submitText}>
                   Pay {'\u09f3'}
                   {(resolvedAmount ?? 0).toLocaleString()} via SSLCommerz
@@ -230,9 +233,9 @@ export default function DonationFormScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+const createStyles = (c: ThemeColors, _isDark: boolean) => ({
+  container: { flex: 1, backgroundColor: c.background },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -240,46 +243,48 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: c.textPrimary },
   scroll: { padding: 16, paddingBottom: 40 },
-  campaignTitle: { fontSize: 20, fontWeight: '800', color: Colors.textPrimary },
-  campaignMeta: { fontSize: 13, color: Colors.textSecondary, marginTop: 4, marginBottom: 20 },
-  label: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary, marginBottom: 10 },
+  campaignTitle: { fontSize: 20, fontWeight: '800', color: c.textPrimary },
+  campaignMeta: { fontSize: 13, color: c.textSecondary, marginTop: 4, marginBottom: 20 },
+  label: { fontSize: 14, fontWeight: '600', color: c.textSecondary, marginBottom: 10 },
   presets: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 8 },
   presetBtn: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: Colors.card,
+    borderColor: c.border,
+    backgroundColor: c.card,
   },
-  presetActive: { borderColor: Colors.primary, backgroundColor: '#EFF6FF' },
-  presetText: { fontSize: 15, fontWeight: '600', color: Colors.textSecondary },
-  presetTextActive: { color: Colors.primary },
+  presetActive: { borderColor: c.primary, backgroundColor: c.primarySurface },
+  presetText: { fontSize: 15, fontWeight: '600', color: c.textSecondary },
+  presetTextActive: { color: c.primary },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
-    backgroundColor: Colors.card,
+    backgroundColor: c.card,
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: c.border,
   },
-  switchLabel: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary },
-  switchHint: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+  switchLabel: { fontSize: 15, fontWeight: '600', color: c.textPrimary },
+  switchHint: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
   guestNote: {
     flexDirection: 'row',
     gap: 8,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: c.primarySurface,
     padding: 12,
     borderRadius: 10,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: c.primarySurfaceBorder,
   },
-  guestNoteText: { flex: 1, fontSize: 13, color: Colors.primary, lineHeight: 18 },
+  guestNoteText: { flex: 1, fontSize: 13, color: c.primary, lineHeight: 18 },
   submitBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: c.primary,
     borderRadius: 14,
     paddingVertical: 16,
     flexDirection: 'row',
@@ -289,7 +294,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   submitDisabled: { opacity: 0.7 },
-  submitText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-  secureNote: { textAlign: 'center', fontSize: 12, color: Colors.textSecondary, marginTop: 12 },
-  errorText: { textAlign: 'center', marginTop: 40, color: Colors.textSecondary },
+  submitText: { color: c.onPrimary, fontSize: 16, fontWeight: '700' },
+  secureNote: { textAlign: 'center', fontSize: 12, color: c.textSecondary, marginTop: 12 },
+  errorText: { textAlign: 'center', marginTop: 40, color: c.textSecondary },
 });

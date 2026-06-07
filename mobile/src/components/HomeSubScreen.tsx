@@ -2,7 +2,6 @@ import React from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   StatusBar,
   ScrollView,
@@ -12,7 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
-import { Colors } from '../constants/colors';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../hooks/useThemedStyles';
 
 interface HomeSubScreenProps {
   title: string;
@@ -32,6 +32,39 @@ export function HomeSubScreen({
   scroll = true,
   contentContainerStyle,
 }: HomeSubScreenProps) {
+  const { colors, isDark } = useTheme();
+  const styles = useThemedStyles((c) => ({
+    root: { flex: 1, backgroundColor: c.background },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+    },
+    backBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: c.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    backSpacer: { width: 42 },
+    title: { fontSize: 16, fontWeight: '800', color: c.textPrimary },
+    scroll: { flexGrow: 1, padding: 24 },
+    placeholder: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingTop: 48,
+    },
+    placeholderText: {
+      fontSize: 14,
+      color: c.textSecondary,
+      textAlign: 'center',
+    },
+  }));
+
   const body = children ?? (
     <View style={styles.placeholder}>
       <Text style={styles.placeholderText}>Coming soon.</Text>
@@ -40,7 +73,10 @@ export function HomeSubScreen({
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
+      />
 
       <View style={styles.topBar}>
         <TouchableOpacity
@@ -51,7 +87,7 @@ export function HomeSubScreen({
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
+          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.title}>{title}</Text>
         <View style={styles.backSpacer} />
@@ -70,35 +106,3 @@ export function HomeSubScreen({
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  backBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backSpacer: { width: 42 },
-  title: { fontSize: 16, fontWeight: '800', color: Colors.textPrimary },
-  scroll: { flexGrow: 1, padding: 24 },
-  placeholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 48,
-  },
-  placeholderText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-  },
-});

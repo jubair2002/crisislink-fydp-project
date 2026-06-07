@@ -9,13 +9,14 @@ import {
   Platform,
   Animated,
   ActivityIndicator,
-  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import type { ThemeColors } from '../../constants/themes';
 import { signUpWithEmail } from '../../services/authService';
 import type { UserRole } from '../../types/auth';
 import { Input } from '../../components/Input';
@@ -26,6 +27,8 @@ const ROLES: { value: UserRole; label: string; desc: string }[] = [
 ];
 
 export default function SignupScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -74,9 +77,9 @@ export default function SignupScreen() {
 
   const passwordStrength = () => {
     if (!password) return null;
-    if (password.length < 6) return { label: 'Weak', color: Colors.danger, percent: 33 };
-    if (password.length < 10) return { label: 'Good', color: Colors.warning, percent: 66 };
-    return { label: 'Strong', color: Colors.success, percent: 100 };
+    if (password.length < 6) return { label: 'Weak', color: colors.danger, percent: 33 };
+    if (password.length < 10) return { label: 'Good', color: colors.warning, percent: 66 };
+    return { label: 'Strong', color: colors.success, percent: 100 };
   };
   const strength = passwordStrength();
 
@@ -90,8 +93,6 @@ export default function SignupScreen() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -103,7 +104,7 @@ export default function SignupScreen() {
         >
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
+              <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
 
@@ -120,7 +121,7 @@ export default function SignupScreen() {
                 style={styles.successBtn}
                 onPress={() => router.replace('/(auth)/login')}
               >
-                <LinearGradient colors={['#2563EB', '#1D4ED8']} style={styles.successBtnGradient}>
+                <LinearGradient colors={[colors.primary, colors.primary]} style={styles.successBtnGradient}>
                   <Text style={styles.successBtnText}>Continue to Sign In</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -208,9 +209,9 @@ export default function SignupScreen() {
                 disabled={loading}
                 activeOpacity={0.88}
               >
-                <LinearGradient colors={['#2563EB', '#1D4ED8']} style={styles.submitBtnGradient}>
+                <LinearGradient colors={[colors.primary, colors.primary]} style={styles.submitBtnGradient}>
                   {loading ? (
-                    <ActivityIndicator color="#FFFFFF" />
+                    <ActivityIndicator color={colors.onPrimary} />
                   ) : (
                     <Text style={styles.submitBtnText}>Create Account</Text>
                   )}
@@ -230,8 +231,8 @@ export default function SignupScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
+const createStyles = (c: ThemeColors, _isDark: boolean) => ({
+  root: { flex: 1, backgroundColor: c.background },
   scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 32 },
 
   header: { flexDirection: 'row', alignItems: 'center', paddingTop: 8 },
@@ -241,72 +242,73 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: c.muted,
   },
 
   titleBlock: { marginTop: 24, marginBottom: 24, alignItems: 'flex-start' },
   title: {
-    fontSize: 30, fontWeight: '800', color: Colors.textPrimary,
+    fontSize: 30, fontWeight: '800', color: c.textPrimary,
     letterSpacing: -0.6, marginBottom: 6,
   },
-  subtitle: { fontSize: 15, color: Colors.textSecondary, lineHeight: 22 },
+  subtitle: { fontSize: 15, color: c.textSecondary, lineHeight: 22 },
 
   form: {},
 
   errorBanner: {
-    backgroundColor: '#FEF2F2', borderRadius: 12, padding: 14, marginBottom: 16,
-    borderWidth: 1, borderColor: '#FECACA',
+    backgroundColor: c.dangerSurface, borderRadius: 12, padding: 14, marginBottom: 16,
+    borderWidth: 1, borderColor: c.dangerSurfaceBorder,
   },
-  errorBannerText: { color: Colors.danger, fontSize: 13, fontWeight: '500' },
+  errorBannerText: { color: c.danger, fontSize: 13, fontWeight: '500' },
 
   sectionLabel: {
-    fontSize: 13, fontWeight: '600', color: Colors.textSecondary,
+    fontSize: 13, fontWeight: '600', color: c.textSecondary,
     marginBottom: 10, marginLeft: 2,
   },
 
   roleRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
   roleCard: {
-    flex: 1, borderRadius: 14, borderWidth: 1.5, borderColor: '#E2E8F0',
-    padding: 16, backgroundColor: '#FFFFFF',
+    flex: 1, borderRadius: 14, borderWidth: 1.5, borderColor: c.border,
+    padding: 16, backgroundColor: c.card,
   },
   roleCardActive: {
-    borderColor: Colors.primary, backgroundColor: '#EFF6FF',
+    borderColor: c.primary, backgroundColor: c.primarySurface,
   },
-  roleLabel: { fontSize: 15, fontWeight: '700', color: Colors.textPrimary, marginBottom: 4 },
-  roleLabelActive: { color: Colors.primary },
-  roleDesc: { fontSize: 12, color: Colors.textSecondary },
+  roleLabel: { fontSize: 15, fontWeight: '700', color: c.textPrimary, marginBottom: 4 },
+  roleLabelActive: { color: c.primary },
+  roleDesc: { fontSize: 12, color: c.textSecondary },
 
   strengthRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     marginTop: -8, marginBottom: 16, paddingHorizontal: 4,
   },
-  strengthBar: { flex: 1, height: 4, backgroundColor: '#E2E8F0', borderRadius: 2, overflow: 'hidden' },
+  strengthBar: { flex: 1, height: 4, backgroundColor: c.border, borderRadius: 2, overflow: 'hidden' },
   strengthFill: { height: '100%', borderRadius: 2 },
   strengthLabel: { fontSize: 11, fontWeight: '700', minWidth: 48 },
 
   submitBtn: {
     borderRadius: 16, overflow: 'hidden', marginTop: 8,
-    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 8 },
+    shadowColor: c.primary, shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25, shadowRadius: 16, elevation: 8,
   },
   submitBtnDisabled: { opacity: 0.65 },
   submitBtnGradient: {
     alignItems: 'center', justifyContent: 'center', paddingVertical: 17,
   },
-  submitBtnText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.3 },
+  submitBtnText: { fontSize: 16, fontWeight: '700', color: c.onPrimary, letterSpacing: 0.3 },
 
   successCard: {
-    backgroundColor: '#FFFFFF', borderRadius: 24, padding: 32, alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
+    backgroundColor: c.card, borderRadius: 24, padding: 32, alignItems: 'center',
+    shadowColor: c.shadow, shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08, shadowRadius: 20, elevation: 6, marginBottom: 16,
+    borderWidth: 1, borderColor: c.border,
   },
-  successTitle: { fontSize: 22, fontWeight: '800', color: Colors.textPrimary, marginBottom: 8 },
-  successBody: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
+  successTitle: { fontSize: 22, fontWeight: '800', color: c.textPrimary, marginBottom: 8 },
+  successBody: { fontSize: 14, color: c.textSecondary, textAlign: 'center', lineHeight: 20, marginBottom: 24 },
   successBtn: { borderRadius: 14, overflow: 'hidden', alignSelf: 'stretch' },
   successBtnGradient: { paddingVertical: 14, alignItems: 'center' },
-  successBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  successBtnText: { color: c.onPrimary, fontSize: 15, fontWeight: '700' },
 
   bottomLink: { alignSelf: 'center', marginTop: 24, paddingVertical: 8 },
-  bottomLinkText: { fontSize: 14, color: Colors.textSecondary },
-  bottomLinkBold: { color: Colors.primary, fontWeight: '700' },
+  bottomLinkText: { fontSize: 14, color: c.textSecondary },
+  bottomLinkBold: { color: c.primary, fontWeight: '700' },
 });

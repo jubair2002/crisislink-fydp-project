@@ -1,18 +1,40 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, StatusBar, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { Colors } from '../../constants/colors';
-import { disasterStyles } from './disasterStyles';
+import { MAP_DARK_STYLE } from '../../constants/themes';
+import type { ThemeColors } from '../../constants/themes';
+import { useDisasterStyles } from './disasterStyles';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
 
 const DEFAULT_LAT = 23.8103;
 const DEFAULT_LNG = 90.4125;
 
+const createStyles = (c: ThemeColors) => ({
+  root: { flex: 1, backgroundColor: c.background },
+  map: { flex: 1 },
+  footer: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 12,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: c.border,
+    backgroundColor: c.card,
+  },
+  coordText: { fontSize: 13, color: c.textSecondary, textAlign: 'center' as const },
+});
+
 export default function MapPickerScreen() {
+  const disasterStyles = useDisasterStyles();
+  const styles = useThemedStyles(createStyles);
+  const { colors, isDark, primaryGradient } = useTheme();
+
   const params = useLocalSearchParams<{ lat?: string; lng?: string }>();
   const initialLat = params.lat != null ? Number(params.lat) : DEFAULT_LAT;
   const initialLng = params.lng != null ? Number(params.lng) : DEFAULT_LNG;
@@ -34,11 +56,9 @@ export default function MapPickerScreen() {
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <StatusBar barStyle="dark-content" />
-
       <View style={disasterStyles.headerRow}>
         <TouchableOpacity onPress={() => router.back()} style={disasterStyles.backBtn}>
-          <Ionicons name="chevron-back" size={22} color={Colors.textPrimary} />
+          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={disasterStyles.headerTitle}>Pick location</Text>
       </View>
@@ -52,6 +72,7 @@ export default function MapPickerScreen() {
           latitudeDelta: 0.04,
           longitudeDelta: 0.04,
         }}
+        customMapStyle={isDark ? MAP_DARK_STYLE : undefined}
         onPress={(e: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) =>
           setCoord({
             latitude: e.nativeEvent.coordinate.latitude,
@@ -76,7 +97,7 @@ export default function MapPickerScreen() {
           {coord.latitude.toFixed(5)}, {coord.longitude.toFixed(5)}
         </Text>
         <TouchableOpacity style={disasterStyles.primaryBtn} onPress={confirm} activeOpacity={0.88}>
-          <LinearGradient colors={['#2563EB', '#1D4ED8']} style={disasterStyles.primaryBtnGradientWrap}>
+          <LinearGradient colors={primaryGradient} style={disasterStyles.primaryBtnGradientWrap}>
             <Text style={disasterStyles.primaryBtnText}>Confirm location</Text>
           </LinearGradient>
         </TouchableOpacity>
@@ -84,18 +105,3 @@ export default function MapPickerScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
-  map: { flex: 1 },
-  footer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    paddingTop: 12,
-    gap: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-  },
-  coordText: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center' },
-});

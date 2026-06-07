@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Image, StyleSheet, type ViewStyle, type ImageStyle } from 'react-native';
+import { View, Image, type ViewStyle, type ImageStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/colors';
+import { useTheme } from '../contexts/ThemeContext';
+import { useThemedStyles } from '../hooks/useThemedStyles';
 
 type Props = {
   uri?: string | null;
@@ -18,6 +19,16 @@ export function CampaignCoverImage({
   imageStyle,
   rounded = 12,
 }: Props) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles((c) => ({
+    placeholder: {
+      width: '100%',
+      backgroundColor: c.primarySurface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  }));
+
   if (uri) {
     return (
       <Image
@@ -40,16 +51,7 @@ export function CampaignCoverImage({
         style,
       ]}
     >
-      <Ionicons name="heart" size={32} color="#93C5FD" />
+      <Ionicons name="heart" size={32} color={colors.primary} />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  placeholder: {
-    width: '100%',
-    backgroundColor: '#DBEAFE',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
