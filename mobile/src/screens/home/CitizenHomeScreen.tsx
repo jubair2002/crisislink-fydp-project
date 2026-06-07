@@ -34,10 +34,10 @@ const SERVICE_ITEMS: HomeServiceItem[] = [
   { icon: 'albums-outline', label: 'Campaigns', onPress: () => router.push('/(main)/campaigns') },
   { icon: 'people-outline', label: 'Community', onPress: () => void openGeneralChannel() },
   { icon: 'notifications-outline', label: 'Alerts', onPress: () => router.push('/(main)/notifications') },
-  { icon: 'person-outline', label: 'Profile', onPress: () => router.push('/(main)/profile') },
   { icon: 'warning-outline', label: 'Disasters', onPress: () => router.push('/(main)/disasters') },
-  { icon: 'chatbubble-outline', label: 'Messages', onPress: () => void openGeneralChannel() },
   { icon: 'help-circle-outline', label: 'Support', onPress: () => router.push('/(main)/campaigns') },
+  { icon: 'settings-outline', label: 'Settings', onPress: () => router.push('/(main)/settings') },
+  { icon: 'flag-outline', label: 'Report', onPress: () => router.push('/(main)/report') },
 ];
 
 export default function CitizenHomeScreen() {

@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, LogOut } from 'lucide-react';
+import { Bell, LogOut, MoreVertical } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createClient } from '@/lib/supabase/client';
 import type { Profile } from '@/types/auth';
@@ -14,7 +14,13 @@ const initialsFor = (name?: string | null, email?: string | null): string => {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
-export default function Topbar({ profile }: { profile: Profile }) {
+interface TopbarProps {
+  profile: Profile;
+  onToggleSidebar: () => void;
+  sidebarVisible: boolean;
+}
+
+export default function Topbar({ profile, onToggleSidebar, sidebarVisible }: TopbarProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -36,15 +42,26 @@ export default function Topbar({ profile }: { profile: Profile }) {
 
   return (
     <header className="sticky top-0 z-20 bg-surface/80 backdrop-blur border-b border-surface-border">
-      <div className="h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
-        <div className="lg:hidden w-10" />
+      <div className="h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={onToggleSidebar}
+            className="p-2 rounded-lg text-ink-muted hover:text-ink hover:bg-surface-muted transition shrink-0"
+            aria-label={sidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
+            aria-expanded={sidebarVisible}
+            title={sidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
+          >
+            <MoreVertical className="w-5 h-5" />
+          </button>
 
-        <div className="flex-1 min-w-0">
-          <p className="text-xs uppercase tracking-wider text-ink-muted">Admin Console</p>
-          <p className="text-sm font-semibold truncate">Welcome back, {profile.name}</p>
+          <div className="min-w-0">
+            <p className="text-xs uppercase tracking-wider text-ink-muted">Admin Console</p>
+            <p className="text-sm font-semibold truncate">Welcome back, {profile.name}</p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             className="p-2 rounded-lg text-ink-muted hover:text-ink hover:bg-surface-muted transition"

@@ -77,9 +77,10 @@ export default function MainLayout() {
           ),
         }}
       />
-      {/* Routable from the notification bell on the dashboard, but
-          hidden from the tab bar itself. */}
+      {/* Hidden from tab bar — opened from home services / notification bell */}
       <Tabs.Screen name="notifications" options={{ href: null }} />
+      <Tabs.Screen name="settings" options={{ href: null }} />
+      <Tabs.Screen name="report" options={{ href: null }} />
     </Tabs>
   );
 }

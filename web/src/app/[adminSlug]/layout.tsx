@@ -1,8 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { getAdminSlug } from '@/lib/adminSlug';
 import { getAdminProfile, getCurrentUser } from '@/lib/auth';
-import Sidebar from './_components/Sidebar';
-import Topbar from './_components/Topbar';
+import AdminShell from './_components/AdminShell';
 
 export default async function AdminLayout({
   children,
@@ -25,12 +24,8 @@ export default async function AdminLayout({
   if (!profile) redirect('/login?error=forbidden');
 
   return (
-    <div className="flex min-h-screen bg-surface-muted">
-      <Sidebar slug={adminSlug} />
-      <div className="flex-1 flex flex-col min-w-0 lg:pl-64">
-        <Topbar profile={profile} />
-        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6">{children}</main>
-      </div>
-    </div>
+    <AdminShell slug={adminSlug} profile={profile}>
+      {children}
+    </AdminShell>
   );
 }

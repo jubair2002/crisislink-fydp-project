@@ -48,12 +48,10 @@ const VOLUNTEER_SERVICES: HomeServiceItem[] = [
   { icon: 'heart-outline', label: 'Campaigns', onPress: () => router.push('/(main)/campaigns') },
   { icon: 'people-outline', label: 'Community', onPress: () => void openGeneralChannel() },
   { icon: 'notifications-outline', label: 'Alerts', onPress: () => router.push('/(main)/notifications') },
-  { icon: 'person-outline', label: 'Profile', onPress: () => router.push('/(main)/profile') },
   { icon: 'navigate-outline', label: 'Respond', onPress: () => router.push('/(main)/disasters') },
-  { icon: 'document-text-outline', label: 'Reports', onPress: () => router.push('/(main)/disasters') },
   { icon: 'shield-checkmark-outline', label: 'Verify', onPress: () => router.push('/(main)/tasks') },
-  { icon: 'chatbubble-outline', label: 'Messages', onPress: () => void openGeneralChannel() },
-  { icon: 'settings-outline', label: 'Account', onPress: () => router.push('/(main)/profile') },
+  { icon: 'settings-outline', label: 'Settings', onPress: () => router.push('/(main)/settings') },
+  { icon: 'flag-outline', label: 'Report', onPress: () => router.push('/(main)/report') },
 ];
 
 export default function VolunteerHomeScreen() {

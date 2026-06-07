@@ -363,7 +363,12 @@ export default function ChatListScreen() {
             </TouchableOpacity>
           ) : null}
 
-          <Text style={styles.sectionTitle}>Community channels</Text>
+          <View style={styles.sectionHeadRow}>
+            <Text style={styles.sectionTitle}>Community channels</Text>
+            <TouchableOpacity onPress={() => router.push('/(main)/chat/channels')} hitSlop={8}>
+              <Text style={styles.sectionLink}>Browse all</Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.cardList}>
             {channels.length > 0 ? (
               channels.map(renderChannelCard)
@@ -437,8 +442,15 @@ const styles = StyleSheet.create({
   },
   broadcastPromptTitle: { fontSize: 13, fontWeight: '800', color: Colors.textPrimary },
   broadcastPromptSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  sectionTitle: { fontSize: 15, fontWeight: '800', color: Colors.textPrimary, marginBottom: 10 },
-  sectionGap: { marginTop: 20 },
+  sectionTitle: { fontSize: 15, fontWeight: '800', color: Colors.textPrimary },
+  sectionHeadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  sectionLink: { fontSize: 13, fontWeight: '700', color: Colors.primary },
+  sectionGap: { marginTop: 20, marginBottom: 10 },
   cardList: { gap: 12 },
   card: {
     flexDirection: 'row',

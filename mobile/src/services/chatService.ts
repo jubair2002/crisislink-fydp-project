@@ -119,58 +119,70 @@ const attachSenderProfiles = async (messages: Message[]): Promise<Message[]> => 
 export async function getChatsForUser(userId: string, role: UserRole): Promise<ChatListItem[]> {
   const { data: memberships, error: memErr } = await supabase
     .from('chat_members')
-    .select('chat_id, unread_count')
+    .select('chat_id, unread_count, chats(*)')
     .eq('user_id', userId);
 
   if (memErr) throw new Error(friendlyError(memErr.message));
 
-  const memberMap = new Map(
-    (memberships ?? []).map((m) => [String(m.chat_id), Number(m.unread_count ?? 0)]),
-  );
-  const memberChatIds = [...memberMap.keys()];
+  const memberByChatId = new Map<string, number>();
+  const memberChatRows = new Map<string, Record<string, unknown>>();
 
-  const { data: channels, error: chErr } = await supabase
-    .from('chats')
-    .select('*')
-    .eq('type', 'channel')
-    .order('name', { ascending: true });
+  for (const row of memberships ?? []) {
+    const chatId = String(row.chat_id);
+    memberByChatId.set(chatId, Number(row.unread_count ?? 0));
+    const chat = row.chats as Record<string, unknown> | Record<string, unknown>[] | null;
+    if (chat && !Array.isArray(chat) && chat.id != null) {
+      memberChatRows.set(chatId, chat);
+    }
+  }
 
-  if (chErr) throw new Error(friendlyError(chErr.message));
+  const globalChannels = await getGlobalChannels(role);
+  const out: ChatListItem[] = [];
+  const seen = new Set<string>();
 
-  let memberChats: Record<string, unknown>[] = [];
-  if (memberChatIds.length > 0) {
-    const { data, error } = await supabase
+  for (const ch of globalChannels) {
+    seen.add(ch.id);
+    out.push({
+      ...ch,
+      unread_count: memberByChatId.get(ch.id) ?? 0,
+      is_member: memberByChatId.has(ch.id),
+    });
+  }
+
+  const unresolvedMemberIds = [...memberByChatId.keys()].filter((id) => !seen.has(id));
+  if (unresolvedMemberIds.length) {
+    const { data: extraChats, error: extraErr } = await supabase
       .from('chats')
       .select('*')
-      .in('id', memberChatIds)
-      .order('last_message_at', { ascending: false, nullsFirst: false });
-    if (error) throw new Error(friendlyError(error.message));
-    memberChats = (data ?? []) as Record<string, unknown>[];
+      .in('id', unresolvedMemberIds);
+    if (!extraErr && extraChats) {
+      for (const row of extraChats as Record<string, unknown>[]) {
+        memberChatRows.set(String(row.id), row);
+      }
+    }
   }
 
-  const seen = new Set<string>();
-  const out: ChatListItem[] = [];
-
-  for (const row of memberChats) {
+  for (const [chatId, row] of memberChatRows) {
+    if (seen.has(chatId)) continue;
     const type = row.type as ChatType;
-    const slug = row.channel_slug as string | null | undefined;
     if (!roleCanAccessChatType(role, type)) continue;
-    if (type === 'channel' && !isChannelVisibleToRole(slug, role)) continue;
-    const id = String(row.id);
-    seen.add(id);
-    out.push(mapChat(row, { unread_count: memberMap.get(id) ?? 0, is_member: true }));
-  }
-
-  for (const row of (channels ?? []) as Record<string, unknown>[]) {
-    const id = String(row.id);
     const slug = row.channel_slug as string | null | undefined;
-    if (seen.has(id)) continue;
-    if (!roleCanAccessChatType(role, 'channel')) continue;
-    if (!isChannelVisibleToRole(slug, role)) continue;
-    out.push(mapChat(row, { unread_count: memberMap.get(id) ?? 0, is_member: memberMap.has(id) }));
+    if (type === 'channel' && !isChannelVisibleToRole(slug, role)) continue;
+    seen.add(chatId);
+    out.push(
+      mapChat(row, {
+        unread_count: memberByChatId.get(chatId) ?? 0,
+        is_member: true,
+      }),
+    );
   }
 
   out.sort((a, b) => {
+    if (a.type === 'channel' && b.type !== 'channel') return -1;
+    if (a.type !== 'channel' && b.type === 'channel') return 1;
+    if (a.type === 'channel' && b.type === 'channel') {
+      return String(a.name).localeCompare(String(b.name));
+    }
     const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
     const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
     return tb - ta;
@@ -433,11 +445,13 @@ export async function getGlobalChannels(role?: UserRole): Promise<Chat[]> {
   const { data, error } = await supabase
     .from('chats')
     .select('*')
-    .eq('type', 'channel')
+    .not('channel_slug', 'is', null)
     .order('name', { ascending: true });
 
   if (error) throw new Error(friendlyError(error.message));
+
   return ((data ?? []) as Record<string, unknown>[])
+    .filter((row) => String(row.type ?? '') === 'channel')
     .map((row) => mapChat(row))
     .filter((c) => !role || isChannelVisibleToRole(c.channel_slug, role));
 }
