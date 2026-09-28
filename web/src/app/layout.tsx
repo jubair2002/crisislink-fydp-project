@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from '@/context/AuthContext';
 import './globals.css';
 
 const geistSans = Geist({
@@ -14,8 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'CrisisLink Admin',
-  description: 'Admin dashboard for the CrisisLink Disaster Management Platform',
+  title: 'CrisisLink Network',
+  description:
+    'Real-time disaster management, volunteer coordination, and transparent donation tracking for Bangladesh.',
 };
 
 export default function RootLayout({
@@ -26,7 +28,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full bg-surface-muted text-ink">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         <Toaster
           position="top-right"
           toastOptions={{
