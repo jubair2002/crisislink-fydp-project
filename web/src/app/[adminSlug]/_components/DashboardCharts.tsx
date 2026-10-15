@@ -40,7 +40,7 @@ const ChartCard = ({
   className?: string;
 }) => (
   <div
-    className={`rounded-xl bg-surface border border-surface-border shadow-card p-5 ${className}`}
+    className={`rounded-lg border border-surface-border bg-surface p-5 ${className}`}
   >
     <header className="mb-4">
       <h3 className="text-sm font-semibold text-ink">{title}</h3>

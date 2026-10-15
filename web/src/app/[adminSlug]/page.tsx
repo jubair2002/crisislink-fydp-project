@@ -35,20 +35,24 @@ export default async function DashboardPage({
     await fetchDashboardData();
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+    <div className="mx-auto max-w-screen-2xl space-y-8">
+      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-surface-border pb-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard Overview</h1>
-          <p className="text-sm text-ink-muted">
-            Live snapshot of platform activity, response status, and fundraising.
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-brand">
+            Admin workspace
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight text-ink">Overview</h1>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-ink-muted">
+            A clear view of community activity, disaster response, and fundraising.
           </p>
         </div>
         <p className="text-xs text-ink-muted">
-          Updated {new Date().toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+          Updated{' '}
+          {new Date().toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
         </p>
       </header>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      <section aria-label="Platform summary" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <MetricCard
           label="Total Users"
           value={numberFmt.format(summary.totalUsers)}
@@ -95,11 +99,23 @@ export default async function DashboardPage({
         </Link>
       </section>
 
-      <DashboardCharts
-        signups={signupsLast30Days}
-        disasters={disastersByTypeThisMonth}
-        volunteerSkills={volunteersBySkill}
-      />
+      <section aria-labelledby="activity-heading" className="space-y-4">
+        <header className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 id="activity-heading" className="text-lg font-semibold tracking-tight text-ink">
+              Platform activity
+            </h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              Trends and breakdowns from across CrisisLink.
+            </p>
+          </div>
+        </header>
+        <DashboardCharts
+          signups={signupsLast30Days}
+          disasters={disastersByTypeThisMonth}
+          volunteerSkills={volunteersBySkill}
+        />
+      </section>
     </div>
   );
 }
