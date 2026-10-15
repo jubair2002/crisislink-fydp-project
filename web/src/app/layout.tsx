@@ -14,9 +14,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'CrisisLink Admin',
-  description: 'Admin dashboard for the CrisisLink Disaster Management Platform',
+  title: {
+    default: 'CrisisLink Network',
+    template: '%s | CrisisLink Network',
+  },
+  description: 'Real-time disaster management and transparent donation tracking for Bangladesh.',
 };
+
+import { AuthProvider } from '@/context/AuthContext';
 
 export default function RootLayout({
   children,
@@ -26,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full bg-surface-muted text-ink">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
         <Toaster
           position="top-right"
           toastOptions={{

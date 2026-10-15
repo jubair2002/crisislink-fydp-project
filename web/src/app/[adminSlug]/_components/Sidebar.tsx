@@ -51,11 +51,15 @@ export default function Sidebar({ slug, mobileOpen, desktopOpen, onMobileClose }
 
   const Header = (
     <div className="px-5 py-5 flex items-center gap-3 border-b border-white/5">
-      <div className="w-9 h-9 rounded-lg bg-brand grid place-items-center text-white font-bold shrink-0">
-        C
-      </div>
+      <img
+        src="/logo.svg"
+        alt="CrisisLink Network"
+        width={34}
+        height={34}
+        className="w-8 h-8 rounded-lg shrink-0 shadow-sm"
+      />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-white truncate">CrisisLink</p>
+        <p className="text-sm font-semibold text-white truncate">CrisisLink Network</p>
         <p className="text-[11px] text-slate-400 flex items-center gap-1">
           <ShieldCheck className="w-3 h-3 shrink-0" /> Admin Console
         </p>

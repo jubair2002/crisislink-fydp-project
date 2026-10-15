@@ -1,6 +1,18 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 @theme {
+  --color-primary: #2563EB;
+  --color-secondary: #06B6D4;
+  --color-alert: #EF4444;
+  --color-bg-base: #F8FAFC;
+  --color-card: #FFFFFF;
+  --color-dark: #0F172A;
+  --color-text-main: #0F172A;
+  --color-text-sec: #475569;
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+
   --color-brand: #2563EB;
   --color-brand-secondary: #06B6D4;
   --color-brand-accent: #EF4444;
