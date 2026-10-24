@@ -1,0 +1,17 @@
+{
+  "name": "crisislink-test-suite",
+  "version": "1.0.0",
+  "description": "Comprehensive End-to-End Test Suite for CrisisLink Platform (API, UI, Performance, Security, UAT)",
+  "type": "module",
+  "scripts": {
+    "test": "node run_all_tests.mjs",
+    "test:api": "node --test api/api.test.mjs",
+    "test:ui": "node --test ui/web_citizen_ui.test.mjs ui/web_admin_ui.test.mjs ui/mobile_e2e_spec.mjs",
+    "test:perf": "node --test performance/load_test.mjs",
+    "test:security": "node --test security/rls_security.test.mjs security/injection_audit.test.mjs security/ipn_tamper.test.mjs",
+    "test:uat": "node --test uat/uat_scenarios.test.mjs"
+  },
+  "keywords": ["crisislink", "testing", "api", "ui", "performance", "security", "uat"],
+  "author": "CrisisLink QA & Resilience Team",
+  "license": "ISC"
+}
